@@ -12,6 +12,9 @@ use Data::Dumper;
 
 use List::Util qw(first);
 
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use Vcf;
 
 use Sanger::CGP::Vagrent;
@@ -63,7 +66,7 @@ eval {
   }
   open my $OUT_FH, '>', $options->{'output'} or croak 'Failed to create: '.$options->{'output'};
   my $annotator = get_annotator($options);
-  
+
   process_data($vcf_in,$OUT_FH,$annotator,$options);
   close $OUT_FH or croak 'Failed to close: '.$options->{'output'};
   Vcf::validate($options->{'output'});
@@ -98,18 +101,18 @@ sub process_data {
 
 sub generate_annotation {
   my ($vcf,$annotator,$opts,$rec) = @_;
-  my $var = parse_vcf_record($vcf,$opts,$rec); 
+  my $var = parse_vcf_record($vcf,$opts,$rec);
   $rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VT' => varType($var));
 
   my @groups = annotate($annotator,$var);
-  
+
   if(scalar @groups > 0 && defined $groups[0]){
     my $default = getBookmarkedGroup($REPRE_BM,@groups);
     my $worst = getBookmarkedGroup($WORST_BM,@groups);
     if(defined $default){
       $rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VD' => stringifyAnnotation($default));
       $rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VC' => $annotator->getOntologySummary($default));
-    } 
+    }
     if(defined $worst){
       $rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VW' => stringifyAnnotation($worst));
       if(!defined $default){
@@ -338,10 +341,10 @@ sub get_annotator {
 
 sub find_species_in_vcf {
   my ($vcf,$opts) = @_;
-  my $out = 0;  
+  my $out = 0;
   $vcf->parse_header;
   $header_already_parsed = 1;
-  
+
   my ($ctgs) = @{$vcf->get_header_line(key=>'contig')};
   if(defined $ctgs && ref $ctgs eq 'HASH'){
     my $ctg = $ctgs->{(keys %$ctgs)[0]};
@@ -385,15 +388,15 @@ sub option_builder {
     'p|process=n' => \$opts{'process'},
     'sp|species=s' => \$opts{'species'},
     'as|assembly=s' => \$opts{'assembly'},
-    
+
   );
 
   pod2usage() if($opts{'help'});
-  
+
   if($opts{'version'}){
     print 'Version: '.Sanger::CGP::Vagrent->VERSION."\n";
     exit;
-  }  
+  }
 
   pod2usage(q{'-i' must be defined}) unless($opts{'input'});
   pod2usage(q{'-i' must exist}) unless(-e $opts{'input'});

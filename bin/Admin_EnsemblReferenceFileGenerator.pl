@@ -6,6 +6,9 @@ use warnings FATAL => 'all';
 use Carp;
 use Cwd qw(getcwd abs_path);
 
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use Getopt::Long;
 use Pod::Usage;
 use Try::Tiny;
@@ -44,7 +47,7 @@ try {
 		generateFilteredFasta($opts, $ncFasta, $fasta);
 	}
 	print "Done\n";
-	# Create fai index file 
+	# Create fai index file
 	print "Building Fasta Index ----- ";
 	my $fai = createFaiIndex($fasta);
 	print "Done\n";
@@ -68,7 +71,7 @@ sub generateCacheFile{
 	$cmd .= " -f $fasta";
 	$cmd .= " -g $gtf";
 	$cmd .= " -o $rawCache";
-	
+
 	system($cmd) == 0 || croak "unable to create cache file: $rawCache";
 	system("sort -k 1,1 -k 2n,2 -k 3n,3 $rawCache | bgzip > $cache") == 0 || croak "unable to sort and zip cache file: $cache";
 	unlink $rawCache;
@@ -132,11 +135,11 @@ sub getFileUrlsForRetrival {
 	# ftp://ftp.ensembl.org/pub/release-74/fasta/homo_sapiens/cdna
 	# ftp://ftp.ensembl.org/pub/release-74/fasta/homo_sapiens/ncrna
 	# ftp://ftp.ensembl.org/pub/release-74/gtf/homo_sapiens
-	
+
 	# ftp://ftp.ensembl.org/pub/release-74/fasta/danio_rerio/cdna
 	# ftp://ftp.ensembl.org/pub/release-74/fasta/danio_rerio/ncrna
 	# ftp://ftp.ensembl.org/pub/release-74/gtf/danio_rerio
-	
+
 	my $ncFaDir = $opts->{'f'};
 	$ncFaDir =~ s|/cdna$|/ncrna|;
 	my $gtfDir = $opts->{'f'};
@@ -154,7 +157,7 @@ sub getFileUrlsForRetrival {
 		foreach my $file (@files){
 			foreach my $ext (@ENSMBL_REF_FILE_EXTENTIONS){
 				if($file =~ m/$ext$/){
-					push @out, $dir. '/' . (split '/', $file)[-1]; 	
+					push @out, $dir. '/' . (split '/', $file)[-1];
 				}
 			}
 		}
@@ -213,16 +216,16 @@ Admin_EnsemblReferenceFileGenerator.pl - Generates the Vagrent reference files f
 
 =head1 SYNOPSIS
 
-Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapiens_core_74_37p] [-f <ftp://ftp.ensembl.org/pub/release-XX/fasta/XXX_XXX/cdna/>] [-c /path/to/CCDS2Sequence.version.txt] [-o /path/to/output/directory] 
+Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapiens_core_74_37p] [-f <ftp://ftp.ensembl.org/pub/release-XX/fasta/XXX_XXX/cdna/>] [-c /path/to/CCDS2Sequence.version.txt] [-o /path/to/output/directory]
 
   General Options:
 
     --help         (-h)     Brief documentation
 
     --ftp          (-f)     Ensembl ftp directory containing the cDNA fasta sequence files
-    
+
     --output       (-o)     Output directory
-    
+
     --ncstatus     (-n)     Optional, path to a lookup file for the status of non-coding transcripts
     
     --species      (-sp)    Species (ie human, mouse)
@@ -230,7 +233,7 @@ Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapi
     --assembly     (-as)    Assembly version (ie GRCh37, GRCm38)
     
     --database     (-d)     Ensembl core database version number (ie homo_sapiens_core_74_37p)
-    
+
     --ccds         (-c)     (Optional, but strongly advised) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS
 
 =cut

@@ -5,6 +5,9 @@ use English qw(-no_match_vars);
 use warnings FATAL => 'all';
 use Carp;
 
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use Getopt::Long;
 use Pod::Usage;
 use Try::Tiny;
@@ -134,7 +137,7 @@ sub convertTranscript {
 							maxpos => $rawE->[2],
 							rnaminpos => $rmin,
 							rnamaxpos => $rmax,);
-												
+
 		unless(defined $strand){
 			if($rawE->[3] eq '+'){
 				$strand = 1;
@@ -143,12 +146,12 @@ sub convertTranscript {
 			} else {
 				croak "Expecting strand of + or -, recieved: ".$rawE->[3];
 			}
-		}					
+		}
 		push(@exons,$convE);
 	}
-	
+
 	my ($protAcc,$protAccVer,$cdsMin,$cdsMax,$cdsPhase);
-	
+
 	if($type eq Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType()){
 		# protein coding
 		$protAcc = $data->{'protacc'};
@@ -206,14 +209,14 @@ sub convertTranscript {
 																		cdsphase => $cdsPhase,
 																		genomicminpos => $sortedExons[0]->getMinPos,
 																		genomicmaxpos => $sortedExons[-1]->getMaxPos,
-																		exons => \@exons,);	
+																		exons => \@exons,);
 	return $convT;
 }
 
 sub writeTranscript {
 	my ($fh,$t,$rawT) = @_;
 	print $fh join("\t",$rawT->{'lines'}->{$EXON_TYPE}->[0]->[0],$t->getGenomicMinPos - 1,
-											$t->getGenomicMaxPos,$t->getAccession,$t->getGeneName,length $t->getcDNASeq);																			
+											$t->getGenomicMaxPos,$t->getAccession,$t->getGeneName,length $t->getcDNASeq);
 	$t->{_cdnaseq} = undef;
 	print $fh "\t",Dumper($t),"\n";			
 }
@@ -325,9 +328,9 @@ Admin_EnsemblGtf2CacheConverter.pl [-h] [-f /path/to/ensembl.fa] [-g /path/to/en
     --help         (-h)     Brief documentation
 
     --fasta        (-f)     Fasta file containing the transcripts to be imported, fai file must also be present.
-    
+
     --gtf          (-g)     Ensembl GTF file for converting
-    
+
     --output       (-o)     Output file
     
     --species      (-sp)    Species (ie human, mouse)
@@ -335,7 +338,6 @@ Admin_EnsemblGtf2CacheConverter.pl [-h] [-f /path/to/ensembl.fa] [-g /path/to/en
     --assembly     (-as)  Assembly version (ie GRCh37, GRCm38)
     
     --database     (-d)     Ensembl core database version number (ie homo_sapiens_core_74_37p)
-    
+
     --ccds         (-c)     (Optional, but strongly advised) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS
-   
 =cut

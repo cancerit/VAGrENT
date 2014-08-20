@@ -9,6 +9,9 @@ use Getopt::Long;
 use Pod::Usage;
 use Try::Tiny;
 
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use File::Type;
 use Readonly qw(Readonly);
 
@@ -22,7 +25,7 @@ Readonly my @ZIP_TYPES => qw(application/x-gzip);
 try {
 	my $opts = option_builder();
 	my $trans = getInterestingTranscriptsFromFile($opts);
-	generateFilteredFasta($opts,$trans);	
+	generateFilteredFasta($opts,$trans);
 } catch {
   warn "An error occurred while building reference support files\:\n\t$_"; # not $@
 };
@@ -31,21 +34,21 @@ sub generateFilteredFasta {
 	my ($opts,$trans) = @_;
 	my $type = getInputFileType($opts->{'f'});
 	my ($inFh,$outFh);
-	
+
 	if($type eq 'text') {
 		open $inFh, '<'.$opts->{'f'} || croak("unable to open sequence input file:".$opts->{'f'});
 	} elsif($type eq 'zip'){
 		open $inFh, 'zcat '.$opts->{'f'}.' |' || croak("unable to open sequence input file:".$opts->{'f'});
 	}
-	
+
 	if(defined $opts->{'a'}){
 		open $outFh, '>>'.$opts->{'o'} || croak("unable to open sequence ouput file:".$opts->{'f'});
 	} else {
 		open $outFh, '>'.$opts->{'o'} || croak("unable to open sequence ouput file:".$opts->{'f'});
 	}
-	
+
 	my $keep = 0;
-	
+
 	while (<$inFh>){
 		if(m/^>/){
 			my ($key) = split /\s/;
@@ -73,19 +76,19 @@ sub getInterestingTranscriptsFromFile {
 	my $status = undef;
 	my $cmd;
 	if($type eq 'text'){
-		$cmd = "grep"; 
+		$cmd = "grep";
 	} elsif($type eq 'zip'){
 		$cmd = "zgrep";
 	} else {
 		croak "file is of an unrecognised format ($type): ".$opts->{'f'};
 	}
-	
+
 	$cmd .= " '>' ". $opts->{'f'};
 	$cmd .= ' | grep ';
 	foreach my $b(@{$opts->{'b'}}){
 		$cmd .= " -e transcript_biotype:$b";
 	}
-	
+
 	if(defined $opts->{'s'}){
 		open my $statfh, '<'.$opts->{'s'} || croak("unable to open status lookup file:".$opts->{'s'});
 		while(<$statfh>){
@@ -97,7 +100,7 @@ sub getInterestingTranscriptsFromFile {
 	} else {
 		$cmd .= ' | grep known ';
 	}
-	
+
 	open my $fh, "$cmd |" || croak("unable to grep through fasta file with command: $cmd");
 	if(defined $opts->{'s'}) {
 		while (<$fh>){
@@ -167,13 +170,13 @@ Admin_EnsemblTranscriptFastaFilter.pl [-h] [-f /path/to/ensembl.fa] [-o /path/to
     --help         (-h)     Brief documentation
 
     --fasta        (-f)     Ensembl fasta file
-    
+
     --output       (-o)     Output file
-   
+
     --biotypes     (-b)     Ensembl transcript biotypes to filter for, supports multiple instances
-    
-    --status       (-s)     Optional, Transcript Status look up file, simple transcript id - status list, space separated, one entry per line 
-   
+
+    --status       (-s)     Optional, Transcript Status look up file, simple transcript id - status list, space separated, one entry per line
+
     --append       (-a)     Append to existing output file
 
 =cut
