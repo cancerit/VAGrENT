@@ -81,9 +81,18 @@ sub process_data {
   my $c = 0;
   while(my $record = $in->next_data_array) {
     $c++;
+    #next unless ($record->[0] eq '12' && $record->[1] eq '12810079');
+    #print join $TAB, 'BEFORE',@{$record};
+    #print $NL;
+
+
     generate_annotation($in,$anno,$opts,$record);
     print $out join $TAB, @{$record};
     print $out $NL;
+
+    #print join $TAB, 'AFTER',@{$record};
+    #print $NL;
+
   }
 }
 
@@ -108,18 +117,6 @@ sub generate_annotation {
       }
     }
   } 
-
-#   my @annotation = annotate($annotator,$var);
-#   if(defined $annotation[0] && $annotation[0] ne q{}){
-#     $rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VD' => $annotation[0]);
-#   	my $terms = (split('\|',$annotation[0]))[5];
-# 		$rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VC' => $terms);
-#   }  
-#   if(defined $annotation[1] && $annotation[1] ne q{}){
-#     $rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VW' => $annotation[1]);
-#   }  
-
-
   return;
 }
 
@@ -131,30 +128,6 @@ sub annotate {
   } catch {
       warn "caught error: $_\n"; # not $@
   };  
-#   my $repAnno = q{};
-#   my $worstAnno = q{};
-#   my $representative = undef;
-# 	my $worst = undef;
-#   if(scalar(@annotationGroups) > 0 && defined($annotationGroups[0])){	
-#     my $sameAnno = 0;
-#     foreach my $a (@annotationGroups){
-#   		my $wasRep = 0;
-#   		my $wasWor = 0;
-#   		if(!defined($representative) && $a->hasBookmark($REPRE_BM)){
-#   			$wasRep = 1;
-#   			$representative = $a;
-#   		}
-#   		if(!defined($worst) && $a->hasBookmark($WORST_BM)){
-#   			$wasWor = 1;
-#   			$worst = $a;
-#   		}
-#       if($wasRep && $wasWor){
-# 			  $sameAnno = 1;
-# 		  }
-# 		  last if(defined($representative) && defined($worst));
-#     }  
-#   }
-#   return (stringifyAnnotation($representative),stringifyAnnotation($worst));
   return @annotationGroups;
 }
 
@@ -324,7 +297,7 @@ sub make_info_fields {
   push @out, {key => 'INFO',ID => 'VD',Number => 1,Type => 'String',Description => 'Vagrent Default Annotation'},
               {key => 'INFO',ID => 'VW',Number => 1,Type => 'String',Description => 'Vagrent Most Deleterious Annotation'},
               {key => 'INFO',ID => 'VT',Number => 1,Type => 'String',Description => 'Variant type based on the Vagrent Default Annotation'},
-              {key => 'INFO',ID => 'VC',Number => 1,Type => 'String',Description => 'Variant consequence based on the Vagrent Default Annotation'};
+              {key => 'INFO',ID => 'VC',Number => '.',Type => 'String',Description => 'Variant consequence based on the Vagrent Default Annotation'};
 
   return @out;
 }
@@ -409,7 +382,6 @@ sub option_builder {
     'i|input=s' => \$opts{'input'},
     'o|output=s' => \$opts{'output'},
     'c|cache=s' => \$opts{'cache'},
-    't|tabix=s' => \$opts{'tabix'},
     'p|process=n' => \$opts{'process'},
     'sp|species=s' => \$opts{'species'},
     'as|assembly=s' => \$opts{'assembly'},
@@ -435,11 +407,6 @@ sub option_builder {
 
 	pod2usage(q{'-o' must be defined}) unless($opts{'output'});
 	
-  if($opts{'tabix'}) {
-    pod2usage(q{'-t' must exist}) unless(-e $opts{'tabix'});
-    pod2usage(q{'-t' must be a file}) unless(-f $opts{'tabix'});
-    pod2usage(q{'-t' is an empty file}) unless(-s $opts{'tabix'});
-  }
   return \%opts;
 }
 
@@ -451,7 +418,7 @@ AnnotateVcf.pl - Annotate variants - Sub/Snp, Insertion, Deletion, ComplexInDel
 
 =head1 SYNOPSIS
 
-AnnotateVcf.pl [-h] -i <IN_FILE> -o <OUT_FILE>
+AnnotateVcf.pl [-h] -i <IN_FILE> -o <OUT_FILE> -c <VAGRENT_CACHE_FILE>
 
   General Options:
 
@@ -461,7 +428,7 @@ AnnotateVcf.pl [-h] -i <IN_FILE> -o <OUT_FILE>
 
     --output    (-o)      Output vcf
 
-    --cache     (-c)      Reference data cache file
+    --cache     (-c)      Vagrent reference data cache file
 
   Conditional (can be specified if missing from the input VCF file)
 
@@ -471,8 +438,8 @@ AnnotateVcf.pl [-h] -i <IN_FILE> -o <OUT_FILE>
 
   Optional
 
-    --process   (-p)      ID_ANALYSIS_PROCESS that generated this file
+    --version   (-v)      Output version number
 
-    --tabix     (-t)      Gene footprint file, expects co-located *.tbi
+    --process   (-p)      ID_PROCESS that generated this file
 
 =cut

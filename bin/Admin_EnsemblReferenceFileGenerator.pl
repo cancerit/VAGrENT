@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/perl
 
 use strict;
 use English qw(-no_match_vars);
@@ -23,7 +23,7 @@ use Data::Dumper;
 Readonly my @ENSMBL_REF_FILE_EXTENTIONS => qw(cdna.all.fa.gz gtf.gz ncrna.fa.gz);
 Readonly my $FASTA_FILTER_SCRIPT => 'Admin_EnsemblTranscriptFastaFilter.pl';
 Readonly my $GTF_CONVERSION_SCRIPT => 'Admin_EnsemblGtf2CacheConverter.pl';
-Readonly my $FILTERED_FASTA_SUFFIX => 'vagrent.transcript.fa';
+Readonly my $FILTERED_FASTA_SUFFIX => 'vagrent.fa';
 Readonly my $CACHE_SUFFIX_GZ => 'vagrent.cache.gz';
 Readonly my $CACHE_SUFFIX_RAW => 'vagrent.cache.raw';
 Readonly my @TRANSCRIPT_BIOTYPES => qw(protein_coding lincRNA miRNA snoRNA rRNA snRNA);
@@ -53,16 +53,16 @@ try {
 	my $cache = generateCacheFile($opts,$fasta,$gtf,$codFasta);
 	print "Done\n";
 } catch {
-  warn "An error occurred while building reference support files\:\n\t$_"; # not $@
+  croak "An error occurred while building reference support files\:\n\t$_"; # not $@
 };
 
 sub generateCacheFile{
 	my ($opts,$fasta,$gtf,$codFasta) = @_;
 	my $rawCache = createFilePathFromFasta($opts,$codFasta,$CACHE_SUFFIX_RAW);
 	my $cache = createFilePathFromFasta($opts,$codFasta,$CACHE_SUFFIX_GZ);
-	my $cmd = getCacheFileScript();
-	$cmd .= " -s ".$opts->{'s'};
-	$cmd .= " -v ".$opts->{'v'};
+	my $cmd = $^X.' '.getCacheFileScript();
+	$cmd .= " -sp ".$opts->{'sp'};
+	$cmd .= " -as ".$opts->{'as'};
 	$cmd .= " -d ".$opts->{'d'};
 	$cmd .= " -c ".$opts->{'c'} if defined $opts->{'c'};
 	$cmd .= " -f $fasta";
@@ -91,7 +91,7 @@ sub generateFilteredFasta {
 	} else {
 		$outFa = createFilePathFromFasta($opts,$inFa,$FILTERED_FASTA_SUFFIX);
 	}
-	my $cmd = getFastaFilterScript();
+	my $cmd = $^X.' '.getFastaFilterScript();
 	$cmd .= " -f $inFa";
 	$cmd .= " -o $outFa";
 	$cmd .= ' -b '.join(' -b ',@TRANSCRIPT_BIOTYPES);
@@ -172,8 +172,8 @@ sub getCacheFileScript {
 	my $progPath = abs_path($0);
 	my ($vol,$dirs,$file) = File::Spec->splitpath($progPath);
 	my $mods = $dirs;
-	$mods =~ s|scripts/$|modules|;
-  return "perl -I $mods $dirs".$GTF_CONVERSION_SCRIPT;
+	$mods =~ s|bin/$|lib|;
+  return "-I $mods $dirs".$GTF_CONVERSION_SCRIPT;
 }
 
 sub option_builder {
@@ -184,8 +184,8 @@ sub option_builder {
 		'f|ftp=s' => \$opts{'f'},
 		'o|output=s' => \$opts{'o'},
 		'n|ncstatus=s' => \$opts{'n'},
-		's|species=s' => \$opts{'s'},
-		'v|genome=s' => \$opts{'v'},
+		'sp|species=s' => \$opts{'sp'},
+		'as|assembly=s' => \$opts{'as'},
 		'd|database=s' => \$opts{'d'},
 		'c|ccds=s' => \$opts{'c'},
   );
@@ -195,8 +195,8 @@ sub option_builder {
   if(defined($opts{'n'})){
   	pod2usage('Unable to read the non-coding transcript status file') unless -e $opts{'n'} && -r $opts{'n'};
   }
-  pod2usage('Must specify the species') unless defined $opts{'s'};
-  pod2usage('Must specify the genome version') unless defined $opts{'v'};
+  pod2usage('Must specify the species') unless defined $opts{'sp'};
+  pod2usage('Must specify the genome version') unless defined $opts{'as'};
   pod2usage('Must specify the ensembl core database version') unless defined $opts{'d'};
   if(defined($opts{'c'})){
   	pod2usage('CCDS file unreadable') unless -e $opts{'c'} && -r $opts{'c'};
@@ -225,9 +225,9 @@ Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapi
     
     --ncstatus     (-n)     Optional, path to a lookup file for the status of non-coding transcripts
     
-    --species      (-s)     Species (ie human, mouse)
+    --species      (-sp)    Species (ie human, mouse)
     
-    --genome       (-v)     Genome version (ie GRCh37, GRCm38)
+    --assembly     (-as)    Assembly version (ie GRCh37, GRCm38)
     
     --database     (-d)     Ensembl core database version number (ie homo_sapiens_core_74_37p)
     

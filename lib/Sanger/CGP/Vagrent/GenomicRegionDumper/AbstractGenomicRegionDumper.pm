@@ -9,6 +9,8 @@ use Data::Dumper;
 
 use base qw(Sanger::CGP::Vagrent::Annotators::AbstractAnnotator);
 
+my $log = Log::Log4perl->get_logger(__PACKAGE__);
+
 1;
 
 use constant REGION_DUMP_SUB_WINDOW => 99999;
@@ -34,38 +36,27 @@ sub dumpGeneRegions {
 		return undef;
 	}
 	$self->_getTranscriptSource()->setDumpRegion($gr);
-	while(my @trans = $self->_getTranscriptSource()->getTranscriptsForNextGeneInDumpRegion()){
-		last unless(scalar(@trans) > 0 && defined $trans[0]);
-		my $geneFootStart = undef;
-		my $geneFootEnd = undef;
-		foreach my $t(@trans){
-			foreach my $e($t->getExons()){
-				$geneFootStart = $e->getMinPos unless(defined $geneFootStart && $geneFootStart < $e->getMinPos);
-				$geneFootEnd = $e->getMaxPos unless(defined $geneFootEnd && $geneFootEnd > $e->getMaxPos);
-			}
+  foreach my $t($self->_getTranscriptSource()->getTranscripts($gr)){
+      
+      my $min = $t->getGenomicMinPos - $self->UPDOWNSTREAM_5KB_CUTOFF;
+      my $max = $t->getGenomicMaxPos + $self->UPDOWNSTREAM_5KB_CUTOFF;
+      if($min < $gr->getMinPos){
+        $min = $gr->getMinPos;
+      }
+      if($max > $gr->getMaxPos){
+        $max = $gr->getMaxPos;
+      }
+      my $geneR = Sanger::CGP::Vagrent::Data::GenomicRegion->new(
+        'species'				=> $gr->getSpecies,
+        'genomeVersion'         => $gr->getGenomeVersion,
+        'chr' 					=> $gr->getChr,
+        'minpos'				=> $min,
+        'maxpos'				=> $max,);
+  
+      $self->_getWriter->write($geneR);
 		}
-		my $min = $geneFootStart - $self->UPDOWNSTREAM_5KB_CUTOFF;
-		my $max = $geneFootEnd + $self->UPDOWNSTREAM_5KB_CUTOFF;
-		if(defined $self->_getTranscriptSource()->isDumpRegionACompleteSequence() && $self->_getTranscriptSource()->isDumpRegionACompleteSequence() == 1){
-			if($min < $gr->getMinPos){
-				$min = $gr->getMinPos;
-			}
-			if($max > $gr->getMaxPos){
-				$max = $gr->getMaxPos;
-			}
-		}
-
-
-
-		my $geneR = Sanger::CGP::Vagrent::Data::GenomicRegion->new(
-			'species'				=> $gr->getSpecies,
-			'genomeVersion'         => $gr->getGenomeVersion,
-			'chr' 					=> $gr->getChr,
-			'minpos'				=> $min,
-			'maxpos'				=> $max,);
-
-		$self->_getWriter->write($geneR);
-	}
+		
+#	}
 
 	return 1;
 }
@@ -81,6 +72,35 @@ sub dumpCodingExonRegions {
 }
 
 sub _dumpRegionsWithExonConverter {
+  my ($self,$gr,$exonConverter) = @_;
+	unless(defined($gr) && $gr->isa('Sanger::CGP::Vagrent::Data::GenomicRegion')){
+		$log->error("Did not recieve a Sanger::CGP::Vagrent::Data::GenomicRegion object");
+		return undef;
+	}
+  $self->_getTranscriptSource()->setDumpRegion($gr);
+  foreach my $t($self->_getTranscriptSource()->getTranscripts($gr)){
+    my @exons = $t->getExonsGenomicOrder;
+    my $ec = 0;
+    foreach my $e(@exons){
+      $ec++;
+      my $editStart = 1;
+      my $editEnd = 1;
+      $editStart = 0 if $ec == 1;
+      $editEnd = 0 if $ec == scalar(@exons);
+      my @eReg = &$exonConverter($e,$t,$editStart,$editEnd);
+      next unless(defined $eReg[0]);
+      foreach my $r(@eReg){
+        $self->_getWriter->write($r);
+      }
+    }
+  }
+  return 1;
+}
+
+
+=head
+
+sub _dumpRegionsWithExonConverter {
 	my ($self,$gr,$exonConverter) = @_;
 	unless(defined($gr) && $gr->isa('Sanger::CGP::Vagrent::Data::GenomicRegion')){
 		$log->error("Did not recieve a Sanger::CGP::Vagrent::Data::GenomicRegion object");
@@ -88,18 +108,19 @@ sub _dumpRegionsWithExonConverter {
 	}
 	$self->_getTranscriptSource()->setDumpRegion($gr);
 	my $count = 0;
-	while(my @trans = $self->_getTranscriptSource()->getTranscriptsForNextGeneInDumpRegion()){
-		last unless(scalar(@trans) > 0 && defined $trans[0]);
+#	while(my @trans = $self->_getTranscriptSource()->getTranscriptsForNextGeneInDumpRegion()){
+#		last unless(scalar(@trans) > 0 && defined $trans[0]);
 		my @regions;
-		my @sortedTrans = $self->_defaultTranscriptSort(@trans);
-		my $topTrans = $sortedTrans[0];
+#		my @sortedTrans = $self->_defaultTranscriptSort(@trans);
+#		my $topTrans = $sortedTrans[0];
 		$count++;
 
-		foreach my $t(@trans){
-			#print join('|',$t->getGeneName,$t->getAccession,$t->getCCDS,$t->getCdsMinPos,$t->getCdsMaxPos,$t->getCdsLength,length($t->getcDNASeq)),"\n";
+#		foreach my $t(@trans){
+    foreach my $t($self->_getTranscriptSource()->getTranscripts($gr)){
+			warn join('|',$t->getGeneName,$t->getAccession,$t->getCCDS,$t->getCdsMinPos,$t->getCdsMaxPos,$t->getCdsLength,length($t->getcDNASeq)),"\n";
 			my @transReg;
 			my $ec = 0;
-			my @exons = sort {$a->getMinPos <=> $b->getMinPos} $t->getExons;
+			my @exons = $t->getExonsGenomicOrder;
 			foreach my $e(@exons){
 				$ec++;
 				my $editStart = 1;
@@ -148,9 +169,11 @@ sub _dumpRegionsWithExonConverter {
    			$self->_getWriter->write($r);
    		}
    		#last if($count > 20);
-	}
+#	}
 	return 1;
 }
+
+=cut
 
 sub _regionComparison {
 	my ($self,$ref,$test,$loud) = @_;
