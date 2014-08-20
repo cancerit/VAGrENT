@@ -34,7 +34,7 @@ sub getTranscripts {
 
 sub getTranscriptsForNextGeneInDumpRegion {
 	my ($self) = @_;
-	$self->throw('must define a dump region before trying to loop over the genes') unless defined $self->getDumpRegion;
+	croak('must define a dump region before trying to loop over the genes') unless defined $self->getDumpRegion;
 	my $gr = $self->getDumpRegion;
 	unless(defined $self->{_dumpInfo}->{_geneList}){
 		my $sa = $self->_getSliceAdaptor($gr);

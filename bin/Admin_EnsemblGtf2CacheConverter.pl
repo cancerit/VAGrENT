@@ -44,8 +44,8 @@ try {
 };
 
 sub convertGtf {
-	my ($opts,$lookup,$ccds) = @_;
-	my $type = getInputFileType($opts->{'g'});
+  my ($opts,$lookup,$ccds) = @_;
+  my $type = getInputFileType($opts->{'g'});
 	my $fasta = Bio::DB::Sam::Fai->load($opts->{'f'});
 	my ($inFh,$outFh);
 	if($type eq 'text') {
@@ -53,46 +53,48 @@ sub convertGtf {
 	} elsif($type eq 'zip'){
 		open $inFh, 'zcat '.$opts->{'g'}.' |' || croak("unable to open gtf input file:".$opts->{'g'});
 	}
-	open $outFh, ">".$opts->{'o'} || croak("unable to open output file:".$opts->{'o'});
-	my $c = 0;
+  open $outFh, ">".$opts->{'o'} || croak("unable to open output file:".$opts->{'o'});
+  my $c = 0;
 	my $wip;
 	my $currentChr = undef;
-	while(<$inFh>){
-		my @data = split /\s+/;
-		my $acc;
-		if($data[11] =~ m/^\"(ENST\d+)\"\;$/){
-			$acc = $1;
+  while(<$inFh>){
+    next if m/^#/;
+    my $acc;
+    my ($chr,$bioType,$lineType, $start, $end, $strand, $frame, %attr);
+    ($chr,$bioType,$lineType, $start, $end, undef, $strand, $frame, %attr) = split /\s+/;
+    if(exists $attr{'transcript_id'} && defined $attr{'transcript_id'}){
+			$acc = unquoteValue($attr{'transcript_id'});
 			next unless exists $lookup->{$acc};
 		} else {
 			next;
 		}
-		$currentChr = $data[0] unless defined $currentChr;
-		if($currentChr ne $data[0]) {
-			# changed chr, any transcript on previous chr must be finished
-			foreach my $t (processCompleted($opts,$fasta,$lookup,$ccds,$wip,$currentChr)){
+    $currentChr = $chr unless defined $currentChr;
+    if($currentChr ne $chr) {
+      # changed chr, any transcript on previous chr must be finished
+      foreach my $t (processCompleted($opts,$fasta,$lookup,$ccds,$wip,$currentChr)){
 				writeTranscript($outFh,$t,$wip->{$t->getAccession});
 				delete $wip->{$t->getAccession};
 			}
-			$currentChr = $data[0];
-		}
-		my ($ltype,$ttype,@store) = ($data[2],$data[1],$data[0],$data[3],$data[4],$data[6],unquoteValue($data[13]));
-		push(@{$wip->{$acc}->{'lines'}->{$ltype}},\@store);
-		unless(exists $wip->{$acc}->{'type'}){
-			$c++;
-			$wip->{$acc}->{'type'} = $ttype;
+			$currentChr = $chr;
+    }
+    my @store = ($chr,$start,$end,$strand,$frame,unquoteValue($attr{'exon_number'}));
+    push(@{$wip->{$acc}->{'lines'}->{$lineType}},\@store);
+    unless(exists $wip->{$acc}->{'type'}){
+      $c++;
+      $wip->{$acc}->{'type'} = $bioType;
 			$wip->{$acc}->{'acc'} = $acc;
-			$wip->{$acc}->{'gene'} = unquoteValue($data[15]);
-
+			$wip->{$acc}->{'gene'} = unquoteValue($attr{'gene_name'});
+      $wip->{$acc}->{'CCDS'} = unquoteValue($attr{'ccds_id'}) if exists $attr{'ccds_id'};
+    }
+    if($lineType eq $CDS_TYPE && !defined $wip->{$acc}->{'protacc'}){
+			$wip->{$acc}->{'protacc'} = unquoteValue($attr{'protein_id'});
 		}
-		if($ltype eq $CDS_TYPE && !defined $wip->{$acc}->{'protacc'}){
-			$wip->{$acc}->{'protacc'} = unquoteValue($data[21]);
-		}
-	}
-	foreach my $t (processCompleted($opts,$fasta,$lookup,$ccds,$wip,$currentChr)){
-		writeTranscript($outFh,$t,$wip->{$t->getAccession});
-		delete $wip->{$t->getAccession};
-	}
-	close $outFh;
+  }
+  foreach my $t (processCompleted($opts,$fasta,$lookup,$ccds,$wip,$currentChr)){
+    writeTranscript($outFh,$t,$wip->{$t->getAccession});
+    delete $wip->{$t->getAccession};
+  }
+  close $outFh;
 	close $inFh;
 }
 
@@ -102,7 +104,13 @@ sub processCompleted {
 	foreach my $acc (keys %$wip){
 		#warn Dumper($wip->{$acc});
 		if(exists $wip->{$acc}->{'lines'}->{$EXON_TYPE} && $wip->{$acc}->{'lines'}->{$EXON_TYPE}->[0]->[0] eq $currentChr){
-			my $t = convertTranscript($opts,$fasta,$lookup->{$acc},$ccds->{$acc},$wip->{$acc});
+			my $ccdsId = undef;
+      if(exists $ccds->{$acc} && defined $ccds->{$acc}){
+        $ccdsId = $ccds->{$acc};
+      } elsif(exists $wip->{$acc}->{'CCDS'} && defined $wip->{$acc}->{'CCDS'}){
+        $ccdsId = $wip->{$acc}->{'CCDS'};
+      }
+      my $t = convertTranscript($opts,$fasta,$lookup->{$acc},$ccdsId,$wip->{$acc});
 			push @trans, $t;
 		}
 	}
@@ -115,15 +123,15 @@ sub convertTranscript {
 	my @exons;
 	my $strand = undef;
 	my $rnaLengthSum = 0;
-	my @sortedExonLines = sort {$a->[4] <=> $b->[4]} @{$data->{'lines'}->{$EXON_TYPE}};
+	my @sortedExonLines = sort {$a->[5] <=> $b->[5]} @{$data->{'lines'}->{$EXON_TYPE}};
 	foreach my $rawE (@sortedExonLines){
 		my $elength = ($rawE->[2] - $rawE->[1]) + 1;
 		my $rmin = $rnaLengthSum + 1;
 		my $rmax = $rnaLengthSum + $elength;
 		$rnaLengthSum += $elength;
 		my $convE = Sanger::CGP::Vagrent::Data::Exon->new(
-							species => $opts->{'s'},
-							genomeVersion => $opts->{'v'},
+							species => $opts->{'sp'},
+							genomeVersion => $opts->{'as'},
 							chr => $rawE->[0],
 							minpos => $rawE->[1],
 							maxpos => $rawE->[2],
@@ -149,14 +157,14 @@ sub convertTranscript {
 		$protAcc = $data->{'protacc'};
 		$protAccVer = 1;
 		my $cdsLength = 0;
-		my @sortedCdsLines = sort {$a->[4] <=> $b->[4]} @{$data->{'lines'}->{$CDS_TYPE}};
+		my @sortedCdsLines = sort {$a->[5] <=> $b->[5]} @{$data->{'lines'}->{$CDS_TYPE}};
 		foreach my $cds (@sortedCdsLines){
 			$cdsLength += ($cds->[2] - $cds->[1]) + 1;
 		}
 		# find CDS start
 		my $fivePrimeUtrExonLength = 0;
 		foreach my $e (@sortedExonLines){
-			if($sortedCdsLines[0]->[4] eq $e->[4]){
+			if($sortedCdsLines[0]->[5] eq $e->[5]){
 				if($strand > 0){
 					$cdsMin = $fivePrimeUtrExonLength + (($sortedCdsLines[0]->[1] - $e->[1]) + 1);
 					$cdsMax = ($cdsMin + $cdsLength) - 1;
@@ -169,8 +177,11 @@ sub convertTranscript {
 				$fivePrimeUtrExonLength += ($e->[2] - $e->[1]) + 1;
 			}
 		}
-		$cdsMax += 3 if exists $data->{'lines'}->{$CDS_STOP_TYPE};
+		$cdsMax += 3 if exists $data->{'lines'}->{$CDS_STOP_TYPE};    
 		$cdsPhase = 0;
+    if($sortedCdsLines[0]->[4] > 0){
+      $cdsPhase = 3 - $sortedCdsLines[0]->[4];
+    }
 	} else {
 		# non-coding
 		$protAcc = undef;
@@ -207,7 +218,7 @@ sub writeTranscript {
 	print $fh join("\t",$rawT->{'lines'}->{$EXON_TYPE}->[0]->[0],$t->getGenomicMinPos - 1,
 											$t->getGenomicMaxPos,$t->getAccession,$t->getGeneName,length $t->getcDNASeq);
 	$t->{_cdnaseq} = undef;
-	print $fh "\t",Dumper($t),"\n";
+	print $fh "\t",Dumper($t),"\n";			
 }
 
 sub getGeneTypeForTranscript {
@@ -231,7 +242,7 @@ sub getGeneTypeForTranscript {
 
 sub unquoteValue {
 	my $val = shift;
-	$val =~ s/[\";]//g;
+	$val =~ s/[\";]//g if defined $val;
 	return $val;
 }
 
@@ -280,8 +291,8 @@ sub option_builder {
 		'f|fasta=s' => \$opts{'f'},
 		'g|gtf=s' => \$opts{'g'},
 		'o|output=s' => \$opts{'o'},
-		's|species=s' => \$opts{'s'},
-		'v|genome=s' => \$opts{'v'},
+		'sp|species=s' => \$opts{'sp'},
+		'as|assembly=s' => \$opts{'as'},
 		'd|database=s' => \$opts{'d'},
 		'c|ccds=s' => \$opts{'c'},
   );
@@ -293,8 +304,8 @@ sub option_builder {
   $opts{'fai'} = $fai;
   pod2usage('Must specify the input gtf reference file') unless defined $opts{'g'} && -e $opts{'g'};
   pod2usage('Must specify the output file to use') unless defined $opts{'o'};
-  pod2usage('Must specify the species') unless defined $opts{'s'};
-  pod2usage('Must specify the genome version') unless defined $opts{'v'};
+  pod2usage('Must specify the species') unless defined $opts{'sp'};
+  pod2usage('Must specify the genome version') unless defined $opts{'as'};
   pod2usage('Must specify the ensembl core database version') unless defined $opts{'d'};
   if(defined($opts{'c'})){
   	pod2usage('CCDS file unreadable') unless -e $opts{'c'} && -r $opts{'c'};
@@ -310,7 +321,7 @@ Admin_EnsemblGtf2CacheConverter.pl - Generates the Vagrent cache file from the e
 
 =head1 SYNOPSIS
 
-Admin_EnsemblGtf2CacheConverter.pl [-h] [-f /path/to/ensembl.fa] [-g /path/to/ensembl.gtf] [-o /path/to/output.file] [-s human] [-v GRCh37] [-d homo_sapiens_core_74_37p] [-c /path/to/CCDS2Sequence.version.txt]
+Admin_EnsemblGtf2CacheConverter.pl [-h] [-f /path/to/ensembl.fa] [-g /path/to/ensembl.gtf] [-o /path/to/output.file] [-sp human] [-as GRCh37] [-d homo_sapiens_core_74_37p] [-c /path/to/CCDS2Sequence.version.txt]
 
   General Options:
 
@@ -321,13 +332,12 @@ Admin_EnsemblGtf2CacheConverter.pl [-h] [-f /path/to/ensembl.fa] [-g /path/to/en
     --gtf          (-g)     Ensembl GTF file for converting
 
     --output       (-o)     Output file
-
-    --species      (-s)     Species (ie human, mouse)
-
-    --genome       (-v)     Genome version (ie GRCh37, GRCm38)
-
+    
+    --species      (-sp)    Species (ie human, mouse)
+    
+    --assembly     (-as)  Assembly version (ie GRCh37, GRCm38)
+    
     --database     (-d)     Ensembl core database version number (ie homo_sapiens_core_74_37p)
 
     --ccds         (-c)     (Optional, but strongly advised) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS
-
 =cut

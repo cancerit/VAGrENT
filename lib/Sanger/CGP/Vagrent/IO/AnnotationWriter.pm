@@ -3,7 +3,7 @@ package Sanger::CGP::Vagrent::IO::AnnotationWriter;
 use strict;
 use Data::Dumper;
 
-use base qw(Sanger::CGP::Vagrent::Logger);
+use base qw(Sanger::CGP::Vagrent);
 
 1;
 

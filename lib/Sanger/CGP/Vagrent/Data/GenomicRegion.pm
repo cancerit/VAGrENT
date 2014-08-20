@@ -12,6 +12,11 @@ sub _init {
 	$self->throw('coordinates are 1 based, a start position of 0 is not allowed') if($self->{_minpos} == 0);
 }
 
+sub toString {
+	my $self = shift;
+	return $self->getChr.':'.$self->getMinPos.'-'.$self->getMaxPos;
+}
+
 __END__
 
 =head1 NAME
