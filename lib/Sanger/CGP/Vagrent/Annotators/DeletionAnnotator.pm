@@ -10,6 +10,7 @@ use POSIX qw(ceil);
 use Data::Dumper;
 
 use Sanger::CGP::Vagrent::Data::Deletion;
+use Sanger::CGP::Vagrent qw($VERSION);
 
 use base qw(Sanger::CGP::Vagrent::Annotators::AbstractAnnotator);
 

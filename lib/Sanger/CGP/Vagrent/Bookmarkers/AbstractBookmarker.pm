@@ -6,6 +6,7 @@ use Log::Log4perl;
 use Attribute::Abstract;
 use Data::Dumper;
 
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::Ontology::SequenceOntologyClassifier);
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);

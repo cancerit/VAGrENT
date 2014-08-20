@@ -10,6 +10,8 @@ use Log::Log4perl qw(:easy);
 use POSIX qw(ceil);
 use Data::Dumper;
 
+use Sanger::CGP::Vagrent qw($VERSION);
+
 use base qw(Sanger::CGP::Vagrent::Annotators::AbstractAnnotator);
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);

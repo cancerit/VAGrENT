@@ -26,7 +26,7 @@ use File::ShareDir qw(module_dir);
 use Config::IniFiles;
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent);
 
 # constant values holding SO class identifiers
@@ -83,7 +83,7 @@ sub DESTROY {
   if(defined $self->{'_SOsum'}){
     foreach my $k( sort {$self->{'_notSummary'}->{$b} <=> $self->{'_notSummary'}->{$a}} keys %{$self->{'_notSummary'}}){
       print $self->{'_notSummary'}->{$k},' - ',$k,"\n" unless $self->{'_notSummary'}->{$k} == 1;
-    }      
+    }
   }
 }
 
@@ -111,7 +111,7 @@ sub getOntologySummary {
   my $mrna = $anno->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext);
 	my $cds = $anno->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext);
 	my $prot = $anno->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext);
-  my @class = $anno->getClassifications;  
+  my @class = $anno->getClassifications;
   my @terms;
   foreach my $a($anno,$mrna,$cds,$prot){
     next unless defined $a;
@@ -121,8 +121,8 @@ sub getOntologySummary {
     }
   }
   my $thing = join ',', @terms;
- 
-  my $sum = $self->{'_SOsum'}->val('SUMMARY',$thing,$thing);  
+
+  my $sum = $self->{'_SOsum'}->val('SUMMARY',$thing,$thing);
   if($sum eq $thing){
      $self->{'_notSummary'}->{$thing}++;
   }

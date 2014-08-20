@@ -6,7 +6,7 @@ use Log::Log4perl qw(:easy);
 use Carp;
 use Attribute::Abstract;
 use Data::Dumper;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::Annotators::AbstractAnnotator);
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);
@@ -37,7 +37,7 @@ sub dumpGeneRegions {
 	}
 	$self->_getTranscriptSource()->setDumpRegion($gr);
   foreach my $t($self->_getTranscriptSource()->getTranscripts($gr)){
-      
+
       my $min = $t->getGenomicMinPos - $self->UPDOWNSTREAM_5KB_CUTOFF;
       my $max = $t->getGenomicMaxPos + $self->UPDOWNSTREAM_5KB_CUTOFF;
       if($min < $gr->getMinPos){
@@ -52,10 +52,10 @@ sub dumpGeneRegions {
         'chr' 					=> $gr->getChr,
         'minpos'				=> $min,
         'maxpos'				=> $max,);
-  
+
       $self->_getWriter->write($geneR);
 		}
-		
+
 #	}
 
 	return 1;

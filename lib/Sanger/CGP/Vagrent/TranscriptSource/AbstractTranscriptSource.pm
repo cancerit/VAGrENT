@@ -6,7 +6,7 @@ use Log::Log4perl;
 use Carp;
 use Attribute::Abstract;
 use Data::Dumper;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 my $log = Log::Log4perl->get_logger(__PACKAGE__);
 
 1;

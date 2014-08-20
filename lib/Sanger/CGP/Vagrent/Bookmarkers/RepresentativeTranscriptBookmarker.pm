@@ -5,6 +5,7 @@ use strict;
 use Log::Log4perl;
 use Data::Dumper;
 
+use Sanger::CGP::Vagrent qw($VERSION);
 use Sanger::CGP::Vagrent::Data::Annotation;
 
 use base qw(Sanger::CGP::Vagrent::Bookmarkers::AbstractBookmarker);

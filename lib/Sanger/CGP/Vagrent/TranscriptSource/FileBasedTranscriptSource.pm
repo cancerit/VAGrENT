@@ -18,7 +18,7 @@ use Tabix;
 
 use Sanger::CGP::Vagrent::Data::Transcript;
 use Sanger::CGP::Vagrent::Data::Exon;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::TranscriptSource::AbstractTranscriptSource);
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);
@@ -52,9 +52,9 @@ sub getTranscriptsForNextGeneInDumpRegion {
     $self->{_dumpInfo}->{_fullSeq} = 0;
   }
   $self->_populateGeneList($gr) unless defined $self->{_dumpInfo}->{_geneList};
-  $self->_getDumpTranscriptStore($gr) unless defined $self->{_dumpInfo}->{_transcriptStore};  
+  $self->_getDumpTranscriptStore($gr) unless defined $self->{_dumpInfo}->{_transcriptStore};
 
-my $geneListSize =  scalar @{$self->{_dumpInfo}->{_geneList}}; 
+my $geneListSize =  scalar @{$self->{_dumpInfo}->{_geneList}};
   for(my $i = $self->{_dumpInfo}->{_counter} ; $i <= $geneListSize ; $i++){
 		$self->{_dumpInfo}->{_counter}++;
 		next unless(defined $self->{_dumpInfo}->{_geneList}->[$i]);

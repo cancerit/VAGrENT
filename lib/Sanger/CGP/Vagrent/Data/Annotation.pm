@@ -5,6 +5,7 @@ use Data::Dumper;
 use List::Util qw(first);
 use Carp;
 
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent);
 
 1;

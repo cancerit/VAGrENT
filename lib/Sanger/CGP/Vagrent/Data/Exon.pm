@@ -2,7 +2,7 @@ package Sanger::CGP::Vagrent::Data::Exon;
 
 use strict;
 use Data::Dumper;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::Data::AbstractGenomicPosition);
 
 1;

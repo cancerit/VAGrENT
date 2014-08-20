@@ -6,7 +6,7 @@ use List::Util qw(first);
 use Carp;
 
 use Log::Log4perl;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use Sanger::CGP::Vagrent::Data::Transcript;
 
 use base qw(Sanger::CGP::Vagrent);

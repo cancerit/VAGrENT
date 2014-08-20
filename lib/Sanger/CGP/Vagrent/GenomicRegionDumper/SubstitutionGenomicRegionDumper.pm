@@ -4,7 +4,7 @@ use strict;
 
 use Log::Log4perl qw(:easy);
 use Data::Dumper;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::GenomicRegionDumper::AbstractGenomicRegionDumper);
 
 1;

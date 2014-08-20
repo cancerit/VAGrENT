@@ -2,7 +2,7 @@ package Sanger::CGP::Vagrent::IO::AnnotationWriter;
 
 use strict;
 use Data::Dumper;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent);
 
 1;

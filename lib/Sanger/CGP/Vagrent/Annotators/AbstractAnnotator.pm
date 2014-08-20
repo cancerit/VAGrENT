@@ -7,6 +7,8 @@ use POSIX qw(ceil);
 use Data::Dumper;
 use Attribute::Abstract;
 
+use Sanger::CGP::Vagrent qw($VERSION);
+
 use Sanger::CGP::Vagrent::Data::Annotation;
 use Sanger::CGP::Vagrent::Data::AnnotationGroup;
 

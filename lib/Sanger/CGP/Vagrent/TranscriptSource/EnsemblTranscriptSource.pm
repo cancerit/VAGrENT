@@ -11,7 +11,7 @@ use Cwd qw(abs_path);
 use Data::Dumper;
 use Config::IniFiles;
 use File::Spec;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::TranscriptSource::AbstractTranscriptSource);
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);

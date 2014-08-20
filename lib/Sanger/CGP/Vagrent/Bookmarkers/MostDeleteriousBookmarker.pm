@@ -6,6 +6,7 @@ use Log::Log4perl qw(:easy);
 use Data::Dumper;
 use Carp qw(croak);
 
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker);
 
 1;

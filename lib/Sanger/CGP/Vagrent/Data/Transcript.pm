@@ -3,7 +3,7 @@ package Sanger::CGP::Vagrent::Data::Transcript;
 use strict;
 use Carp;
 use Data::Dumper;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use Sort::Key qw(nkeysort);
 
 use base qw(Sanger::CGP::Vagrent);

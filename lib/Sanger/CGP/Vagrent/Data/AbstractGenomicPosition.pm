@@ -4,6 +4,7 @@ use strict;
 use Carp;
 use Attribute::Abstract;
 
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent);
 
 1;

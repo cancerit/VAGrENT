@@ -2,6 +2,7 @@ package Sanger::CGP::Vagrent::Data::AbstractVariation;
 
 use strict;
 
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Bio::Root::Root);
 
 1;

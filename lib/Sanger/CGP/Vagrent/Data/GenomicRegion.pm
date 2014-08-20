@@ -1,7 +1,7 @@
 package Sanger::CGP::Vagrent::Data::GenomicRegion;
 
 use strict;
-
+use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent::Data::AbstractGenomicPosition);
 
 1;

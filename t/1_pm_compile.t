@@ -15,8 +15,15 @@ my $lib_path = "$Bin/../lib";
 
 # Add modules here that cannot be instantiated (should be extended and have no 'new')
 # or need a set of inputs - these should be tested in own test script
-const my @USE_SKIP => qw( Sanger::CGP::Vagrent::GenomicRegionDumper::AbstractGenomicRegionDumper);
-const my @NEW_SKIP => qw();
+const my @USE_SKIP => qw(  );
+const my @NEW_SKIP => qw( Sanger::CGP::Vagrent::Data::AbstractGenomicPosition
+                          Sanger::CGP::Vagrent::Data::ComplexIndel
+                          Sanger::CGP::Vagrent::Data::Deletion
+                          Sanger::CGP::Vagrent::Data::Exon
+                          Sanger::CGP::Vagrent::Data::GenomicRegion
+                          Sanger::CGP::Vagrent::Data::Insertion
+                          Sanger::CGP::Vagrent::Data::Substitution
+                          Sanger::CGP::Vagrent::TranscriptSource::AbstractTranscriptSource );
 
 #warn "\n###################### WARNING #######################\n# 1_pm_compile.pl DISABLED until vagrent core update #\n###################### WARNING #######################\n\n";
 #ok(1,'Here to show willing');
