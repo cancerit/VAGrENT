@@ -9,6 +9,9 @@ use Getopt::Long;
 use Pod::Usage;
 use Try::Tiny;
 
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use File::Type;
 use Readonly qw(Readonly);
 

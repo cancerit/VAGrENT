@@ -6,6 +6,9 @@ use warnings FATAL => 'all';
 use Carp;
 use Cwd qw(getcwd abs_path);
 
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use Getopt::Long;
 use Pod::Usage;
 use Try::Tiny;

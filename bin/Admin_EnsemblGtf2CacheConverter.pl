@@ -5,6 +5,9 @@ use English qw(-no_match_vars);
 use warnings FATAL => 'all';
 use Carp;
 
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
+
 use Getopt::Long;
 use Pod::Usage;
 use Try::Tiny;
