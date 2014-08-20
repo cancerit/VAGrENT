@@ -1,0 +1,43 @@
+---
+abstract: unknown
+author:
+  - unknown
+build_requires:
+  ExtUtils::MakeMaker: 0
+configure_requires:
+  ExtUtils::MakeMaker: 0
+dynamic_config: 0
+generated_by: 'ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.131560'
+license: unknown
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: Vagrent
+no_index:
+  directory:
+    - t
+    - inc
+requires:
+  Attribute::Abstract: 1.02
+  Bio::DB::Sam: 1.39
+  Bio::Root::Version: 1.006924
+  Class::Inspector: 1.28
+  Clone: 0.37
+  Config::IniFiles: 2.83
+  Const::Fast: 0.014
+  File::ShareDir: 1.102
+  HTTP::Date: 6.02
+  HTTP::Message: 6.06
+  LWP: 6.08
+  List::MoreUtils: 0.33
+  Log::Log4perl: 1.44
+  Pod::Escapes: 1.06
+  Pod::Simple: 3.28
+  Sort::Key: 1.33
+  Sub::Exporter::Progressive: 0.001011
+  Sub::Name: 0.09
+  Try::Tiny: 0.22
+  URI: 1.64
+  overloading: 0.02
+  parent: 0.228
+version: 2.0
