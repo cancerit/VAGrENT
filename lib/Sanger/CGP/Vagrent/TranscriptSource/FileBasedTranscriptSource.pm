@@ -9,6 +9,11 @@ use Const::Fast qw(const);
 
 use Bio::DB::Sam;
 
+# prevent the init warnings from Tabix
+BEGIN {
+  $SIG{__WARN__} = sub {warn $_[0] unless( $_[0] =~ m/^Subroutine Tabix.* redefined/)};
+};
+
 use Tabix;
 
 use Sanger::CGP::Vagrent::Data::Transcript;
@@ -36,7 +41,7 @@ sub getTranscripts {
 
 sub _getTranscriptsFromCache {
   my ($self,$gp) = @_;
-  $self->{_cache_tbx} = Tabix->new('-data' => $self->{_cache}) unless defined $self->{_cache_tbx};  
+  $self->{_cache_tbx} = Tabix->new('-data' => $self->{_cache}) unless defined $self->{_cache_tbx};
   my $min;
   my $max = $gp->getMaxPos + $SEARCH_BUFFER;
   if($gp->getMinPos() < $SEARCH_BUFFER){
@@ -44,7 +49,7 @@ sub _getTranscriptsFromCache {
   } else {
     $min = ($gp->getMinPos - $SEARCH_BUFFER) - 1;
   }
-  my $res = $self->{_cache_tbx}->query($gp->getChr(),$min,$max); 
+  my $res = $self->{_cache_tbx}->query($gp->getChr(),$min,$max);
   return undef unless defined $res;
   my $out = undef;
   if(defined $res){
@@ -71,7 +76,7 @@ sub _init {
 
 sub _setCacheFile {
   my ($self,$cache) = @_;
-  
+
   unless(-e $cache && -f $cache && -r $cache){
     $log->logcroak("Specified cache file is unreadable: $cache");
   }
@@ -97,5 +102,5 @@ sub _getTranscriptSeq {
   unless(defined $self->{_fai_obj}){
     $self->{_fai_obj} = Bio::DB::Sam::Fai->load($self->{_cache_fa});
   }
-  return $self->{_fai_obj}->fetch($trans->getAccession); 
+  return $self->{_fai_obj}->fetch($trans->getAccession);
 }
