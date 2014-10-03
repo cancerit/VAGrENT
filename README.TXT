@@ -1,5 +1,3 @@
-package Sanger::CGP::Vagrent::Data::AbstractVariation;
-
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
 # 
@@ -19,51 +17,16 @@ package Sanger::CGP::Vagrent::Data::AbstractVariation;
 # 
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
+# 
+#
+#	1. The usage of a range of years within a copyright statement contained within 
+#	this distribution should be interpreted as being equivalent to a list of years 
+#	including the first and last year specified and all consecutive years between 
+#	them. For example, a copyright statement that reads 'Copyright (c) 2005, 2007-
+#	2009, 2011-2012' should be interpreted as being identical to a statement that 
+#	reads 'Copyright (c) 2005, 2007, 2008, 2009, 2011, 2012' and a copyright 
+#	statement that reads "Copyright (c) 2005-2012' should be interpreted as being 
+#	identical to a statement that reads 'Copyright (c) 2005, 2006, 2007, 2008, 
+#	2009, 2010, 2011, 2012'." 
 ##########LICENCE##########
 
-
-use strict;
-
-use Sanger::CGP::Vagrent qw($VERSION);
-use base qw(Bio::Root::Root);
-
-1;
-
-sub isValid {
-	shift->throw_not_implemented;
-}
-
-__END__
-
-=head1 NAME
-
-Sanger::CGP::Vagrent::Data::AbstractVariation - Abstract Data object representing
-a variation
-
-=head1 DESCRIPTION
-
-This is an abstract data class designed to be extended, it provides a common base class for all
-variations.  Its also privides a placeholder function isValid that must me implemented in child
-classes
-
-=head1 METHODS
-
-=head2 Functions
-
-=head3 isValid
-
-=over
-
-=item Usage :
-
- if($var->isValid()){ ....... }
-
-=item Function :
-
-Abstract validation function, checks internal data, must be implemented by subclasses
-
-=item Returns :
-
-1 for pass, 0 for fail
-
-=back
