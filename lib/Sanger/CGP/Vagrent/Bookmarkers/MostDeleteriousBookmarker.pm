@@ -166,7 +166,30 @@ sub _getMostDeleterious {
 					# splice region change in CDS
 						$score = $self->CODING_SPLICE_REGION_SCORE;
 				}
-
+        if($self->FIVEPRIME_UTR_ESS_SPLICE_SCORE > $score &&
+					$g->hasClassification($self->getEssentialSpliceSiteClass) && $g->hasClassification($self->get5PrimeUtrClass) &&
+					$mrna->hasClassification($self->getEssentialSpliceSiteVariantClass) && $mrna->hasClassification($self->get5PrimeUtrVariantClass)){
+            # essential splice change in 5' UTR, the splice site is probably directly before to the start codon
+            $score = $self->FIVEPRIME_UTR_ESS_SPLICE_SCORE;
+        }
+        if($self->THREEPRIME_UTR_ESS_SPLICE_SCORE > $score &&
+					$g->hasClassification($self->getEssentialSpliceSiteClass) && $g->hasClassification($self->get3PrimeUtrClass) &&
+					$mrna->hasClassification($self->getEssentialSpliceSiteVariantClass) && $mrna->hasClassification($self->get3PrimeUtrVariantClass)){
+						# essential splice change in 3' UTR, the splice site is probably directly after to the stop codon
+						$score = $self->THREEPRIME_UTR_ESS_SPLICE_SCORE;
+				}
+        if($self->FIVEPRIME_UTR_SPLICE_REGION_SCORE > $score &&
+					$g->hasClassification($self->getSpliceRegionClass) && $g->hasClassification($self->get5PrimeUtrClass) &&
+					$mrna->hasClassification($self->getSpliceRegionVariantClass) && $mrna->hasClassification($self->get5PrimeUtrVariantClass)){
+						# splice region change in 5' UTR, the splice site is probably directly before to the start codon
+						$score = $self->FIVEPRIME_UTR_SPLICE_REGION_SCORE;
+				}
+				if($self->THREEPRIME_UTR_SPLICE_REGION_SCORE > $score &&
+					$g->hasClassification($self->getSpliceRegionClass) && $g->hasClassification($self->get3PrimeUtrClass) &&
+					$mrna->hasClassification($self->getSpliceRegionVariantClass) && $mrna->hasClassification($self->get3PrimeUtrVariantClass)){
+						# splice region change in 3' UTR, the splice site is probably directly after to the stop codon
+						$score = $self->THREEPRIME_UTR_SPLICE_REGION_SCORE;
+				}
 			} elsif(defined($mrna)) {
 				# cDNA annotation
 				if($self->START_GAINED_SCORE > $score &&
