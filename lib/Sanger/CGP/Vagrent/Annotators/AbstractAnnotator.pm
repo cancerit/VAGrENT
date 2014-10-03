@@ -615,20 +615,37 @@ sub _buildCDSAnnotation {
 		return $self->_buildUnknownCDSAnnotation($var,$tran,$rAnnot,@classes);
 	}
 	my ($cdsMin,$cdsMinOffset,$cdsMax,$cdsMaxOffset) = (undef,undef,undef,undef);
-	if($rAnnot->getMinPos <= $tran->getCdsMinPos){
+
+	if($rAnnot->getMinPos < $tran->getCdsMinPos){
 		$cdsMin = 1;
 		$cdsMinOffset = 0;
+  } elsif($rAnnot->getMinPos == $tran->getCdsMinPos && $rAnnot->getMinOffset() < 0){
+    $cdsMin = 1;
+    if($self->_isIntronicOffsetDistance($rAnnot->getMinOffset())){
+      $cdsMinOffset = 0;
+    } else {
+      $cdsMinOffset = $rAnnot->getMinOffset();
+    }
 	} else {
 		$cdsMin = ($rAnnot->getMinPos - $tran->getCdsMinPos) + 1;
 		$cdsMinOffset = $rAnnot->getMinOffset();
 	}
-	if($rAnnot->getMaxPos >= $tran->getCdsMaxPos){
-		$cdsMax = length($tran->getCdsSeq);
+
+  if($rAnnot->getMaxPos > $tran->getCdsMaxPos){
+    $cdsMax = length($tran->getCdsSeq);
 		$cdsMaxOffset = 0;
-	} else {
-		$cdsMax = ($rAnnot->getMaxPos() - $tran->getCdsMinPos) + 1;
+  } elsif($rAnnot->getMaxPos == $tran->getCdsMaxPos && $rAnnot->getMaxOffset() > 0){
+    $cdsMax = length($tran->getCdsSeq);
+    if($self->_isIntronicOffsetDistance($rAnnot->getMaxOffset())){
+      $cdsMaxOffset = 0;
+    } else {
+      $cdsMaxOffset = $rAnnot->getMaxOffset();
+    }
+  } else {
+    $cdsMax = ($rAnnot->getMaxPos() - $tran->getCdsMinPos) + 1;
 		$cdsMaxOffset = $rAnnot->getMaxOffset();
-	}
+  }
+
 	my $wt = $self->_getWildTypeStringForCDSAnno($var,$tran,$rAnnot);
 	my $mt = $self->_getMutantStringForCDSAnno($var,$tran,$rAnnot);
 	my $desc = $self->_getCDSDescriptionString($tran,$cdsMin,$cdsMax,$cdsMinOffset,$cdsMaxOffset,$wt,$mt);
@@ -858,18 +875,33 @@ sub _coversStartCodon {
 		# if the transcript isn't protein coding it can't have a start codon
 		return 0;
 	}
-	if($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()){
-		if($anno->getMinPos <= $tran->getCdsMinPos + 2 && $anno->getMaxPos >= $tran->getCdsMinPos){
-			return 1;
-		}
-	} elsif($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()){
-		if($anno->getMinPos > 0 && $anno->getMinPos <= 3){
-			return 1;
-		}
-	} else {
-		# don't know, assume no
+  
+  my ($startMin,$startMax);
+  if($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()){
+    $startMin = $tran->getCdsMinPos;
+    $startMax = $tran->getCdsMinPos + 2;
+  } elsif($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()){
+    $startMin = 1;
+    $startMax = 3;
+  } else {
+    # don't know, assume no
 		return 0;
-	}
+  }
+  
+  if($anno->hasClassification($self->getInsertionClass)){
+    # insertions are a special case, coordinates are outside the variant
+    if($anno->getMinPos < $startMax && $anno->getMaxPos > $startMin){
+      # var started before the end of the first codon, and ended after the start of the first codon
+      return 1;
+    }
+  } else {
+    if(($anno->getMinPos < $startMax || ($anno->getMinPos == $startMax && $anno->getMinOffset == 0)) &&
+        ($anno->getMaxPos > $startMin || ($anno->getMaxPos == $startMin && $anno->getMaxOffset == 0))){
+      # var started before the end of the first codon OR explicitly on the last base of the first codon AND
+      # var ended after the start of the first codon OR explicitly on the first base of the first codon
+      return 1;
+    }
+  }
 	return 0;
 }
 
@@ -879,18 +911,47 @@ sub _coversStopCodon {
 		# if the transcript isn't protein coding it can't have a stop codon
 		return 0;
 	}
-	if($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()){
-		if($anno->getMinPos <= $tran->getCdsMaxPos && $anno->getMaxPos >= $tran->getCdsMaxPos - 2){
-			return 1;
-		}
-	} elsif($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()){
-		if($anno->getMinPos <= $tran->getCdsLength && $anno->getMaxPos >= $tran->getCdsLength - 2){
-			return 1;
-		}
-	} else {
-		# don't know, assume no
+  my ($stopMin,$stopMax);
+  if($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()){
+    $stopMin = $tran->getCdsMaxPos - 2;
+    $stopMax = $tran->getCdsMaxPos;
+  } elsif($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()){
+    $stopMin = $tran->getCdsLength - 2;
+    $stopMax = $tran->getCdsLength;
+  } else {
+    # don't know, assume no
 		return 0;
-	}
+  }
+  
+  if($anno->hasClassification($self->getInsertionClass)){
+    # insertions are a special case, coordinates are outside the variant
+    if($anno->getMinPos < $stopMax && $anno->getMaxPos > $stopMin){
+      # var started before the end of the last codon, and ended after the start of the last codon
+      return 1;
+    }
+  } else {
+    if(($anno->getMinPos < $stopMax || ($anno->getMinPos == $stopMax && $anno->getMinOffset == 0)) &&
+        ($anno->getMaxPos > $stopMin || ($anno->getMaxPos == $stopMin && $anno->getMaxOffset == 0))){
+      # var started before the end of the last codon OR explicitly on the last base of the last codon AND
+      # var ended after the start of the last codon OR explicitly on the first base of the last codon
+      return 1;
+    }
+  }
+
+
+
+# 	if($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()){
+# 		if($anno->getMinPos <= $tran->getCdsMaxPos && $anno->getMaxPos >= $tran->getCdsMaxPos - 2){
+# 			return 1;
+# 		}
+# 	} elsif($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()){
+# 		if($anno->getMinPos <= $tran->getCdsLength && $anno->getMaxPos >= $tran->getCdsLength - 2){
+# 			return 1;
+# 		}
+# 	} else {
+# 		# don't know, assume no
+# 		return 0;
+# 	}
 	return 0;
 }
 
@@ -953,9 +1014,7 @@ sub _canAnnotateToCDS {
 			}
 		}
 		# now we look at the classifications to workout if can be annotated to the CDS
-		if($anno->hasClassification($self->getSpliceRegionVariantClass)){
-			return 1;
-		} elsif($anno->hasClassification($self->getEssentialSpliceSiteVariantClass)){
+		if($anno->hasClassification($self->getSpliceRegionVariantClass) || $anno->hasClassification($self->getEssentialSpliceSiteVariantClass)){
 			return 1;
 		} elsif($anno->hasClassification($self->getComplexChangeVariantClass)){
 			return 1;

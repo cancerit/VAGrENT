@@ -159,16 +159,20 @@ sub _buildRNAAnnotation {
 	}
 
 	if($tran->isProteinCoding){
-		if($mrnaMax >= $tran->getCdsMinPos && $mrnaMin <= $tran->getCdsMaxPos){
+    if(($mrnaMax > $tran->getCdsMinPos || ($mrnaMax == $tran->getCdsMinPos && $mrnaMaxOffset >= 0)) && 
+       ($mrnaMin < $tran->getCdsMaxPos || ($mrnaMin == $tran->getCdsMaxPos && $mrnaMinOffset <= 0))){
+		#if($mrnaMax >= $tran->getCdsMinPos && $mrnaMin <= $tran->getCdsMaxPos){
 			# coding change
 			push(@groupClasses,$self->getCDSClass);
 		}
-		if($mrnaMin < $tran->getCdsMinPos){
+    if($mrnaMin < $tran->getCdsMinPos || ($mrnaMin == $tran->getCdsMinPos && $mrnaMinOffset < 0)){
+		#if($mrnaMin < $tran->getCdsMinPos){
 			# 5prime UTR
 			push(@groupClasses,$self->get5PrimeUtrClass);
 			push(@classes,$self->get5PrimeUtrVariantClass) unless($self->_arrayHasString($self->getCDSClass,@groupClasses));
 		}
-		if($mrnaMax > $tran->getCdsMaxPos){
+    if($mrnaMax > $tran->getCdsMaxPos || ($mrnaMax == $tran->getCdsMaxPos && $mrnaMaxOffset > 0)){
+		#if($mrnaMax > $tran->getCdsMaxPos){
 			# 3prime UTR
 			push(@groupClasses,$self->get3PrimeUtrClass);
 			push(@classes,$self->get3PrimeUtrVariantClass) unless($self->_arrayHasString($self->getCDSClass,@groupClasses));
