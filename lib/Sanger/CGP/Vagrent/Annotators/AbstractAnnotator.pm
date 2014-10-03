@@ -463,7 +463,7 @@ sub _buildProteinAnnotation {
 		}
 	} elsif($cAnnot->hasClassification($self->getFrameShiftVariantClass)){
 		# frame shift
- 		if($mutProtMin == 1 || $wtProt eq $maxMtProt || $self->_sequenceStartsWithSequence($maxMtProt,$wtProt)){
+    if($wtProt eq $maxMtProt || $self->_sequenceStartsWithSequence($maxMtProt,$wtProt)){
  			my $msg = 'very strange frameshift, there is no change in the protein sequence so calling it unknown';
  			$self->addMessage($msg);
  			$log->info($msg);
