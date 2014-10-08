@@ -29,6 +29,7 @@ install_share module => 'Sanger::CGP::Vagrent', 'share';
 
 WriteMakefile(
   NAME          => 'Vagrent',
+  LICENSE       => 'agpl_3', # http://search.cpan.org/~dagolden/CPAN-Meta-2.142690/lib/CPAN/Meta/Spec.pm#license
   VERSION_FROM  => 'lib/Sanger/CGP/Vagrent.pm',
   EXE_FILES     => [qw( bin/Admin_EnsemblGtf2CacheConverter.pl
                         bin/Admin_EnsemblReferenceFileGenerator.pl
