@@ -1,5 +1,27 @@
 #!/usr/bin/perl
 
+##########LICENCE##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project cgpit@sanger.ac.uk
+#
+# This file is part of VAGrENT.
+#
+# VAGrENT is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+##########LICENCE##########
+
+
 use strict;
 use English qw(-no_match_vars);
 use warnings FATAL => 'all';
@@ -13,14 +35,14 @@ use FindBin qw($Bin);
 use lib "$Bin/../lib";
 
 use File::Type;
-use Readonly qw(Readonly);
+use Const::Fast qw(const);
 
 use Data::Dumper;
 use Bio::SeqIO;
 
-Readonly my @TEXT_TYPES => qw(application/octet-stream);
+const my @TEXT_TYPES => qw(application/octet-stream);
 
-Readonly my @ZIP_TYPES => qw(application/x-gzip);
+const my @ZIP_TYPES => qw(application/x-gzip);
 
 try {
 	my $opts = option_builder();

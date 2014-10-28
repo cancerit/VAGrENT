@@ -1,5 +1,27 @@
 #!/usr/bin/perl
 
+##########LICENCE##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project cgpit@sanger.ac.uk
+#
+# This file is part of VAGrENT.
+#
+# VAGrENT is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+##########LICENCE##########
+
+
 use strict;
 use English qw(-no_match_vars);
 use warnings FATAL => 'all';
@@ -14,7 +36,7 @@ use Try::Tiny;
 
 use Data::Dumper;
 use File::Type;
-use Readonly qw(Readonly);
+use Const::Fast qw(const);
 
 use Bio::DB::Sam;
 
@@ -23,15 +45,15 @@ use Sanger::CGP::Vagrent::Data::Exon;
 
 $Data::Dumper::Indent = 0;
 
-Readonly my @TEXT_TYPES => qw(application/octet-stream);
+const my @TEXT_TYPES => qw(application/octet-stream);
 
-Readonly my @ZIP_TYPES => qw(application/x-gzip);
+const my @ZIP_TYPES => qw(application/x-gzip);
 
-Readonly my $PROTEIN_CODING => 'protein_coding';
-Readonly my $EXON_TYPE => 'exon';
-Readonly my $CDS_START_TYPE => 'start_codon';
-Readonly my $CDS_STOP_TYPE => 'stop_codon';
-Readonly my $CDS_TYPE => 'CDS';
+const my $PROTEIN_CODING => 'protein_coding';
+const my $EXON_TYPE => 'exon';
+const my $CDS_START_TYPE => 'start_codon';
+const my $CDS_STOP_TYPE => 'stop_codon';
+const my $CDS_TYPE => 'CDS';
 
 try {
 	my $opts = option_builder();
@@ -177,7 +199,7 @@ sub convertTranscript {
 				$fivePrimeUtrExonLength += ($e->[2] - $e->[1]) + 1;
 			}
 		}
-		$cdsMax += 3 if exists $data->{'lines'}->{$CDS_STOP_TYPE};    
+		$cdsMax += 3 if exists $data->{'lines'}->{$CDS_STOP_TYPE};
 		$cdsPhase = 0;
     if($sortedCdsLines[0]->[4] > 0){
       $cdsPhase = 3 - $sortedCdsLines[0]->[4];
@@ -218,7 +240,7 @@ sub writeTranscript {
 	print $fh join("\t",$rawT->{'lines'}->{$EXON_TYPE}->[0]->[0],$t->getGenomicMinPos - 1,
 											$t->getGenomicMaxPos,$t->getAccession,$t->getGeneName,length $t->getcDNASeq);
 	$t->{_cdnaseq} = undef;
-	print $fh "\t",Dumper($t),"\n";			
+	print $fh "\t",Dumper($t),"\n";
 }
 
 sub getGeneTypeForTranscript {
@@ -332,11 +354,11 @@ Admin_EnsemblGtf2CacheConverter.pl [-h] [-f /path/to/ensembl.fa] [-g /path/to/en
     --gtf          (-g)     Ensembl GTF file for converting
 
     --output       (-o)     Output file
-    
+
     --species      (-sp)    Species (ie human, mouse)
-    
+
     --assembly     (-as)  Assembly version (ie GRCh37, GRCm38)
-    
+
     --database     (-d)     Ensembl core database version number (ie homo_sapiens_core_74_37p)
 
     --ccds         (-c)     (Optional, but strongly advised) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS

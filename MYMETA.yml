@@ -8,7 +8,7 @@ configure_requires:
   ExtUtils::MakeMaker: 0
 dynamic_config: 0
 generated_by: 'ExtUtils::MakeMaker version 6.68, CPAN::Meta::Converter version 2.131560'
-license: unknown
+license: open_source
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
@@ -21,23 +21,18 @@ requires:
   Attribute::Abstract: 1.02
   Bio::DB::Sam: 1.39
   Bio::Root::Version: 1.006924
-  Class::Inspector: 1.28
-  Clone: 0.37
+  Capture::Tiny: 0.24
   Config::IniFiles: 2.83
   Const::Fast: 0.014
   File::ShareDir: 1.102
-  HTTP::Date: 6.02
-  HTTP::Message: 6.06
-  LWP: 6.08
-  List::MoreUtils: 0.33
+  File::Temp: 0.2304
+  File::Type: 0.22
+  IPC::System::Simple: 1.25
+  LWP::Simple: 6.00
+  List::Util: 1.41
   Log::Log4perl: 1.44
-  Pod::Escapes: 1.06
-  Pod::Simple: 3.28
+  Pod::Usage: 1.64
   Sort::Key: 1.33
-  Sub::Exporter::Progressive: 0.001011
-  Sub::Name: 0.09
+  TAP::Harness: 3.33
   Try::Tiny: 0.22
-  URI: 1.64
-  overloading: 0.02
-  parent: 0.228
 version: 2.0

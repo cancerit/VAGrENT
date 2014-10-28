@@ -1,7 +1,30 @@
 #!/bin/bash
 
+##########LICENCE##########
+# Copyright (c) 2014 Genome Research Ltd.
+#
+# Author: Cancer Genome Project cgpit@sanger.ac.uk
+#
+# This file is part of VAGrENT.
+#
+# VAGrENT is free software: you can redistribute it and/or modify it under
+# the terms of the GNU Affero General Public License as published by the Free
+# Software Foundation; either version 3 of the License, or (at your option) any
+# later version.
+#
+# This program is distributed in the hope that it will be useful, but WITHOUT
+# ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+# FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
+# details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+##########LICENCE##########
+
+
 SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/0.1.20.tar.gz"
 SOURCE_TABIX="http://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download"
+SOURCE_VCFTOOLS="http://sourceforge.net/projects/vcftools/files/vcftools_0.1.12a.tar.gz/download"
 
 done_message () {
     if [ $? -eq 0 ]; then
@@ -64,14 +87,6 @@ PERLROOT=$INST_PATH/lib/perl5
 PERLARCH=$PERLROOT/$ARCHNAME
 export PERL5LIB="$PERLROOT:$PERLARCH"
 
-#create a location to build dependencies
-SETUP_DIR=$INIT_DIR/install_tmp
-mkdir -p $SETUP_DIR
-
-# re-initialise log file
-echo > $INIT_DIR/setup.log
-
-
 # log information about this system
 (
     echo '============== System information ===='
@@ -85,15 +100,36 @@ echo > $INIT_DIR/setup.log
     echo
 ) >>$INIT_DIR/setup.log 2>&1
 
-echo -n "Building tabix ..."
-if [ -e $SETUP_DIR/tabix.success ]; then
+perlmods=( "File::ShareDir" "File::ShareDir::Install" )
+
+set -e
+for i in "${perlmods[@]}" ; do
+  echo -n "Installing build prerequisite $i..."
+  (
+    set -x
+    $INIT_DIR/bin/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
+    set +x
+    echo; echo
+  ) >>$INIT_DIR/setup.log 2>&1
+  done_message "" "Failed during installation of $i."
+done
+
+#create a location to build dependencies
+SETUP_DIR=$INIT_DIR/install_tmp
+mkdir -p $SETUP_DIR
+
+cd $SETUP_DIR
+
+CURR_TOOL="tabix"
+CURR_SOURCE=$SOURCE_TABIX
+echo -n "Building $CURR_TOOL ..."
+if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
   echo -n " previously installed ..."
 else
   (
-    cd $SETUP_DIR
     set -ex
-    get_distro tabix $SOURCE_TABIX
-    cd $SETUP_DIR/tabix
+    get_distro $CURR_TOOL $CURR_SOURCE
+    cd $SETUP_DIR/$CURR_TOOL
     make -j$CPU
     cp tabix $INST_PATH/bin/.
     cp bgzip $INST_PATH/bin/.
@@ -103,10 +139,30 @@ else
     make
     make test
     make install
-    touch $SETUP_DIR/tabix.success
+    touch $SETUP_DIR/$CURR_TOOL.success
   ) >>$INIT_DIR/setup.log 2>&1
 fi
-done_message "" "Failed to build tabix."
+done_message "" "Failed to build $CURR_TOOL."
+
+cd $SETUP_DIR
+
+CURR_TOOL="vcftools"
+CURR_SOURCE=$SOURCE_VCFTOOLS
+echo -n "Building $CURR_TOOL ..."
+if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
+  echo -n " previously installed ..."
+else
+  (
+    set -ex
+    get_distro $CURR_TOOL $CURR_SOURCE
+    cd $SETUP_DIR/$CURR_TOOL
+    patch Makefile < $INIT_DIR/patches/vcfToolsInstLocs.diff
+    patch perl/Vcf.pm < $INIT_DIR/patches/vcfToolsProcessLog.diff
+    make -j$CPU PREFIX=$INST_PATH
+    touch $SETUP_DIR/$CURR_TOOL.success
+  ) >>$INIT_DIR/setup.log 2>&1
+fi
+done_message "" "Failed to build $CURR_TOOL."
 
 # need to build samtools as has to be compiled in correct way for perl bindings
 # does not deploy binary in this form
