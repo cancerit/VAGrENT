@@ -124,7 +124,7 @@ sub _ontologyInit {
 sub _loadOntologySummaryIni {
   my $self = shift;
   my $share_path = dirname(abs_path($0)).'/../share';
-  $share_path = module_dir('Sanger::CGP::Vagrent') unless(-e $share_path);
+  $share_path = module_dir('Sanger::CGP::Vagrent') unless(-e File::Spec->catfile($share_path,$TERM_SUMMARY_INI));
   $self->{'_SOsum'} = new Config::IniFiles( -file => File::Spec->catfile($share_path,$TERM_SUMMARY_INI));
 }
 
