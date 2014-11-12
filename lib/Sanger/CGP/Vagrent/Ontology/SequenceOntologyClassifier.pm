@@ -100,16 +100,14 @@ const my $SO_NON_PROTEIN_CODING_CLASS => 'SO:0000011:non_protein_coding';
 
 const my $TERM_SUMMARY_INI => 'SequenceOntologySummary.ini';
 
-sub DESTROY {
-  my $self = shift;
-  if(defined $self->{'_SOsum'}){
-    foreach my $k( sort {$self->{'_notSummary'}->{$b} <=> $self->{'_notSummary'}->{$a}} keys %{$self->{'_notSummary'}}){
-      print $self->{'_notSummary'}->{$k},' - ',$k,"\n" unless $self->{'_notSummary'}->{$k} == 1;
-    }
-  }
-}
-
-
+#sub DESTROY {
+#  my $self = shift;
+#  if(defined $self->{'_SOsum'}){
+#    foreach my $k( sort {$self->{'_notSummary'}->{$b} <=> $self->{'_notSummary'}->{$a}} keys %{$self->{'_notSummary'}}){
+#      print $self->{'_notSummary'}->{$k},' - ',$k,"\n" unless $self->{'_notSummary'}->{$k} == 1;
+#    }
+#  }
+#}
 
 sub _ontologyInit {
   my $self = shift;
@@ -124,7 +122,7 @@ sub _ontologyInit {
 sub _loadOntologySummaryIni {
   my $self = shift;
   my $share_path = dirname(abs_path($0)).'/../share';
-  $share_path = module_dir('Sanger::CGP::Vagrent') unless(-e $share_path);
+  $share_path = module_dir('Sanger::CGP::Vagrent') unless(-e File::Spec->catfile($share_path,$TERM_SUMMARY_INI));
   $self->{'_SOsum'} = new Config::IniFiles( -file => File::Spec->catfile($share_path,$TERM_SUMMARY_INI));
 }
 
