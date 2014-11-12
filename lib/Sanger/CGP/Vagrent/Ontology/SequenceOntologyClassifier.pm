@@ -100,16 +100,14 @@ const my $SO_NON_PROTEIN_CODING_CLASS => 'SO:0000011:non_protein_coding';
 
 const my $TERM_SUMMARY_INI => 'SequenceOntologySummary.ini';
 
-sub DESTROY {
-  my $self = shift;
-  if(defined $self->{'_SOsum'}){
-    foreach my $k( sort {$self->{'_notSummary'}->{$b} <=> $self->{'_notSummary'}->{$a}} keys %{$self->{'_notSummary'}}){
-      print $self->{'_notSummary'}->{$k},' - ',$k,"\n" unless $self->{'_notSummary'}->{$k} == 1;
-    }
-  }
-}
-
-
+#sub DESTROY {
+#  my $self = shift;
+#  if(defined $self->{'_SOsum'}){
+#    foreach my $k( sort {$self->{'_notSummary'}->{$b} <=> $self->{'_notSummary'}->{$a}} keys %{$self->{'_notSummary'}}){
+#      print $self->{'_notSummary'}->{$k},' - ',$k,"\n" unless $self->{'_notSummary'}->{$k} == 1;
+#    }
+#  }
+#}
 
 sub _ontologyInit {
   my $self = shift;
