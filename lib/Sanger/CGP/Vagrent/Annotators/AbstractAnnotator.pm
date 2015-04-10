@@ -462,18 +462,19 @@ sub _buildProteinAnnotation {
  		# something has gone wrong
  		return undef;
  	}
+  
 	my $mtDna = $self->_getMutatedCdsSequence($wtDna,$cdsMinPos,$cdsMaxPos,$cAnnot->getMt());
 	my $mtProt = Bio::Seq->new(-seq => $prePad . $mtDna . $postPad)->translate->seq(); # mutant protein sequence
 	my $maxMtProt = Bio::Seq->new(-seq => $prePad . $mtDna . substr($tran->getcDNASeq,$tran->getCdsMaxPos()))->translate->seq(); # maximised protein sequence, overruns the natural stop and translates to the end of the transcript
 	if($wtProt eq $mtProt){
 		# wt and mt protein sequences are the same, its silent
 		$mutProtMin = ceil(($cAnnot->getMinPos / 3));
-  		$mutProtMax = ceil(($cAnnot->getMaxPos / 3));
-  		$wt = substr($wtProt,($mutProtMin - 1),(($mutProtMax - $mutProtMin) + 1));
-  	  	$mt = substr($mtProt,($mutProtMin - 1),(($mutProtMax - $mutProtMin) + 1));
-  	  	if(length($wt) == 1 && length($mt) == 1 && $mutProtMin == $mutProtMax){
-			$desc = 'p.'.$wt.$mutProtMin.$mt;
-  	  	} else {
+  	$mutProtMax = ceil(($cAnnot->getMaxPos / 3));
+  	$wt = substr($wtProt,($mutProtMin - 1),(($mutProtMax - $mutProtMin) + 1));
+  	$mt = substr($mtProt,($mutProtMin - 1),(($mutProtMax - $mutProtMin) + 1));
+  	if(length($wt) == 1 && length($mt) == 1 && $mutProtMin == $mutProtMax){
+		  $desc = 'p.'.$wt.$mutProtMin.$mt;
+  	} else {
 			$desc = 'p.(=)';
 		}
 		$type = $self->_getDefaultProteinAnnotationType();
@@ -495,10 +496,10 @@ sub _buildProteinAnnotation {
  		if($mutProtMin == 1){
  	  		# its frame shifted the start codon, no idea what this is going to cause.
  	  		push(@classes,$self->getStartLostVariantClass);
- 	  		return $self->_buildUnknownProteinAnnotation($var,$tran,$cAnnot,length($wtProt),@classes);
- 	    }
+	  		return $self->_buildUnknownProteinAnnotation($var,$tran,$cAnnot,length($wtProt),@classes);
+    }
  		$type = Sanger::CGP::Vagrent::Data::Annotation::getFrameShiftAnnotationType();
- 	    push(@classes,$self->getFrameShiftVariantClass);
+    push(@classes,$self->getFrameShiftVariantClass);
 	} else {
 		$wt = $wtProt;
 		$mt = $mtProt;
@@ -512,7 +513,7 @@ sub _buildProteinAnnotation {
 			substr($wt,-1,1,'');
 			substr($mt,-1,1,'');
 		}
-
+    
 		#warn "|$wt| to |$mt|\n";
 		if($wt ne ''){
 			# wild type residue has been changed
@@ -617,8 +618,6 @@ sub _buildProteinAnnotation {
 															subtype => $subtype);
   	$anno->addClassification(@classes);
   	return $anno;
-
-	return undef;
 }
 
 sub _getMutatedCdsSequence: Abstract;
@@ -637,7 +636,6 @@ sub _buildCDSAnnotation {
 		return $self->_buildUnknownCDSAnnotation($var,$tran,$rAnnot,@classes);
 	}
 	my ($cdsMin,$cdsMinOffset,$cdsMax,$cdsMaxOffset) = (undef,undef,undef,undef);
-
 	if($rAnnot->getMinPos < $tran->getCdsMinPos){
 		$cdsMin = 1;
 		$cdsMinOffset = 0;
@@ -667,6 +665,8 @@ sub _buildCDSAnnotation {
     $cdsMax = ($rAnnot->getMaxPos() - $tran->getCdsMinPos) + 1;
 		$cdsMaxOffset = $rAnnot->getMaxOffset();
   }
+
+  print "CDS: $cdsMin , $cdsMinOffset - $cdsMax, $cdsMaxOffset\n" if $self->_debug();
 
 	my $wt = $self->_getWildTypeStringForCDSAnno($var,$tran,$rAnnot);
 	my $mt = $self->_getMutantStringForCDSAnno($var,$tran,$rAnnot);
@@ -959,21 +959,6 @@ sub _coversStopCodon {
       return 1;
     }
   }
-
-
-
-# 	if($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()){
-# 		if($anno->getMinPos <= $tran->getCdsMaxPos && $anno->getMaxPos >= $tran->getCdsMaxPos - 2){
-# 			return 1;
-# 		}
-# 	} elsif($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()){
-# 		if($anno->getMinPos <= $tran->getCdsLength && $anno->getMaxPos >= $tran->getCdsLength - 2){
-# 			return 1;
-# 		}
-# 	} else {
-# 		# don't know, assume no
-# 		return 0;
-# 	}
 	return 0;
 }
 
@@ -1025,10 +1010,25 @@ sub _canAnnotateToCDS {
 		if($anno->hasClassification($self->getInsertionClass)){
 			# insertions are a special case.
 			# Coordinates are the last WT positions, and not the first variant ones like everything else
-			if($anno->getMaxPos <= $tran->getCdsMinPos || $anno->getMinPos >= $tran->getCdsMaxPos){
-				# its outside the CDS
-				return 0;
-			}
+      
+      print 'ANNO POS: '.$anno->getMinPos.' , '.$anno->getMinOffset.' - '.$anno->getMaxPos.' , '.$anno->getMaxOffset."\n" if $self->_debug();
+      print 'CDS POS: '.$tran->getCdsMinPos.' , '.$tran->getCdsMaxPos."\n" if $self->_debug();
+      
+      if($anno->getMaxPos < $tran->getCdsMinPos || $anno->getMinPos > $tran->getCdsMaxPos){
+        # ends before CDS or starts afterwards
+        return 0;
+      } elsif($anno->getMaxPos == $tran->getCdsMinPos) {
+        # potential start codon issues
+        if($anno->getMinPos == $anno->getMaxPos && $anno->getMinPos == $tran->getCdsMinPos && abs($anno->getMinOffset) + abs($anno->getMaxOffset) > 0){
+          # probably start coordinate issues
+          unless($anno->getMaxOffset <= 0 && $self->_isIntronicOffsetDistance($anno->getMaxOffset) == 0){
+            # or not
+            return 0;
+          }
+        } else {
+          return 0;
+        }
+      }
 		} else {
 			if($anno->getMaxPos < $tran->getCdsMinPos || $anno->getMinPos > $tran->getCdsMaxPos){
 				# its outside the CDS
@@ -1050,6 +1050,9 @@ sub _canAnnotateToCDS {
 			return 0;
 		} elsif($anno->hasClassification($self->getUnknownVariantClass)){
 			return 0;
+    } elsif($anno->hasClassification($self->getInsertionClass) && $anno->hasClassification($self->get5PrimeUtrVariantClass)){
+      # odd case, insertions close to the start codons can be described on the CDS even though they don't change it. 
+      return 1;
 		} else {
 			my $msg = "Unable to calculate CDS relevance - UNKNOWN CLASSIFICATION: ".join(' ',$anno->getClassifications);
 			$self->addMessage($msg);
@@ -1066,6 +1069,7 @@ sub _canAnnotateToCDS {
 
 sub _canAnnotateToProtein {
 	my ($self,$tran,$anno) = @_;
+
 	unless($tran->isProteinCoding){
 		# if the transcript isn't protein coding it can't be a coding change
 		return 0;

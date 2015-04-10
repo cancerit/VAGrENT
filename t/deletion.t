@@ -45,6 +45,8 @@ testSplice();
 testExonic();
 testComplexCases();
 testUpStreamDownStream();
+testCdsBoundry();
+
 done_testing();
 
 sub testUpStreamDownStream {
@@ -331,6 +333,7 @@ sub testSplice {
 
 }
 sub testExonic {
+
 	#5 PRIME UTR EXON 1bp DEL
 		test5PrimeUTR_1bp_CEP350(AnnotationTestUtils::CEP350_TRANSCRIPT);
 		test5PrimeUTR_1bp_TOR1AIP2(AnnotationTestUtils::TOR1AIP2_TRANSCRIPT);
@@ -415,7 +418,6 @@ sub testExonic {
 		testCDSExon_StartCodon_2bp_3_CEP350(AnnotationTestUtils::CEP350_TRANSCRIPT);
 		testCDSExon_StartCodon_4bp_1_CEP350(AnnotationTestUtils::CEP350_TRANSCRIPT);
 
-
 	#NON-CODING TRANSCRIPT
 		testExon_1bp_1_AC068831(AnnotationTestUtils::AC068831_TRANSCRIPT);
 		testExon_1bp_2_AC068831(AnnotationTestUtils::AC068831_TRANSCRIPT);
@@ -424,6 +426,497 @@ sub testExonic {
 		testExon_1bp_2_AC011503(AnnotationTestUtils::AC011503_TRANSCRIPT);
 
 }
+
+sub testCdsBoundry{
+
+  testStartUpstream_OR4F5();
+  testStartEndsUpsteam1bp_OR4F5();
+  testStartEndsUpsteam0bp_OR4F5();
+  testEndStarts0bp_OR4F5();
+  testEndStarts1bp_OR4F5();
+  testEndDownstream_OR4F5();
+
+  testStartUpstream_GABPB2();
+  testStartIntronic_GABPB2();
+  testStartSpliceRegion_GABPB2();
+  testStartEssSplice_GABPB2();
+
+}
+
+# OR4F5 protein coding gene - single exon, no UTRs, has both start and stop codons, + strand (probably wrong but great for testing)
+
+sub testStartUpstream_OR4F5 {
+	subtest 'Testing OR4F5 5 Prime UTR Upstream + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+    my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 68091,
+			'maxpos'				=> 68091,
+			'delseq' 				=> 'C');
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get2KBUpStreamVariantClass);
+		done_testing();
+  };
+
+}
+sub testStartEndsUpsteam1bp_OR4F5 {
+	my $file = shift;
+
+	subtest 'Testing OR4F5 Ends Upstream 1 + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 69090,
+			'maxpos'				=> 69090,
+			'delseq' 						=> 'C');
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get2KBUpStreamVariantClass);
+
+		done_testing();
+	};
+}
+sub testStartEndsUpsteam0bp_OR4F5 {
+	my $file = shift;
+
+	subtest 'Testing OR4F5 Ends Upstream 0 + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 69090,
+			'maxpos'				=> 69090,
+			'delseq' 						=> 'C');
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get2KBUpStreamVariantClass);
+
+		done_testing();
+	};
+}
+sub testEndStarts0bp_OR4F5 {
+  my $file = shift;
+
+	subtest 'Testing OR4F5 Starts Downstream 0 + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 70009,
+			'maxpos'				=> 70009,
+			'delseq' 						=> 'C');
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get500BPDownStreamVariantClass);
+
+		done_testing();
+	};
+
+
+
+}
+sub testEndStarts1bp_OR4F5 {
+  my $file = shift;
+
+	subtest 'Testing OR4F5 Starts Downstream 1 + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 70010,
+			'maxpos'				=> 70010,
+			'delseq' 						=> 'C');
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get500BPDownStreamVariantClass);
+
+		done_testing();
+	};
+
+
+
+}
+sub testEndDownstream_OR4F5 {
+  my $file = shift;
+
+	subtest 'Testing OR4F5 Starts Downstream + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 71010,
+			'maxpos'				=> 71010,
+			'delseq' 						=> 'C');
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get5KBDownStreamVariantClass);
+
+		done_testing();
+	};
+
+
+
+}
+
+# GABPB2 protein coding gene with both utrs on + strand of genome, start codon is at the start of an exon
+
+sub testStartUpstream_GABPB2 {
+  my $file = shift;
+
+	subtest 'Testing GABPB2 5 Prime UTR Upstream + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 151042080,
+			'maxpos'				=> 151042080,
+			'delseq' 				=> 'C',);
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get2KBUpStreamVariantClass);
+		done_testing();
+  };
+
+}
+sub testStartIntronic_GABPB2 {
+  my $file = shift;
+
+	subtest 'Testing GABPB2 5 Prime UTR Intronic + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 151060460,
+			'maxpos'				=> 151060460,
+			'delseq' 				=> 'C',);
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),1,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'doesnt have CDS context annotation');
+		ok(!defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'doesnt have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass,$a->get5PrimeUtrClass,$a->getIntronClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','r.?',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->getIntronVariantClass);
+		done_testing();
+  };
+
+}
+sub testStartSpliceRegion_GABPB2 {
+  my $file = shift;
+
+	subtest 'Testing GABPB2 5 Prime UTR Splice Region + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 151060660,
+			'maxpos'				=> 151060660,
+			'delseq' 				=> 'C',);
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),3,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'has have CDS context annotation');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'has have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass,$a->get5PrimeUtrClass,$a->getSpliceRegionClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getDeletionAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffsetSubtype(),
+									332,-6,332,-6,'C','-','r.332-6delc',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->getSpliceRegionVariantClass,$a->get5PrimeUtrVariantClass);
+
+		AnnotationTestUtils::checkAnnotation('examine CDS annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getDeletionAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffsetSubtype(),
+									1,-6,1,-6,'C','-','c.1-6delc',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->getSpliceRegionVariantClass,$a->get5PrimeUtrVariantClass);
+
+		AnnotationTestUtils::checkAnnotation('examine Protein annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','p.?',$t[0]->getProteinAccession,$t[0]->getProteinAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getUnknownVariantClass);
+		done_testing();
+  };
+
+}
+sub testStartEssSplice_GABPB2 {
+  my $file = shift;
+
+	subtest 'Testing GABPB2 5 Prime UTR Ess Splice + strand 1' => sub {
+		 my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => AnnotationTestUtils::TRANSCRIPT_CACHE);   
+
+
+		my $sub = Sanger::CGP::Vagrent::Data::Deletion->new(
+			'species'				=> 'human',
+			'genomeVersion' => 'GRCh37',
+			'chr' 					=> 1,
+			'minpos'				=> 151060665,
+			'maxpos'				=> 151060665,
+			'delseq' 				=> 'C',);
+
+		my @t = $ts->getTranscripts($sub);
+
+		my $a = Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts);
+
+		my @res = $a->getAnnotation($sub);
+
+		is(scalar(@res),1,'annotation group count');
+		is($res[0]->getType,Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType(),'annotation group type - proteincoding');
+		is(scalar(@{$res[0]->getAllAnnotations}),3,'annotation count for group');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext())),'has mRNA context annotation');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext())),'has have CDS context annotation');
+		ok(defined($res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext())),'has have protein context annotation');
+
+		AnnotationTestUtils::checkAnnotationGroup('examine annotation group in detail',$res[0],
+									$t[0]->getGeneName,$t[0]->getCCDS,$t[0]->getAccession,$t[0]->getGeneType,
+									$a->getProteinCodingClass,$a->getEssentialSpliceSiteClass,$a->get5PrimeUtrClass);
+
+		AnnotationTestUtils::checkAnnotation('examine mRNA annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getDeletionAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffsetSubtype(),
+									332,-1,332,-1,'C','-','r.332-1delc',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get5PrimeUtrVariantClass,$a->getEssentialSpliceSiteVariantClass);
+
+		AnnotationTestUtils::checkAnnotation('examine CDS annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getDeletionAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffsetSubtype(),
+									1,-1,1,-1,'C','-','c.1-1delc',$t[0]->getAccession,$t[0]->getAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getDeletionClass,$a->get5PrimeUtrVariantClass,$a->getEssentialSpliceSiteVariantClass);
+
+		AnnotationTestUtils::checkAnnotation('examine Protein annotation in detail',
+									$res[0]->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext()),
+									Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext(),
+									Sanger::CGP::Vagrent::Data::Annotation::getUnknownAnnotationType(),
+									Sanger::CGP::Vagrent::Data::Annotation::getPositionOffSequenceSubtype(),
+									0,0,0,0,'?','?','p.?',$t[0]->getProteinAccession,$t[0]->getProteinAccessionVersion,$t[0]->getDatabase,$t[0]->getDatabaseVersion,
+									$a->getUnknownVariantClass);
+		done_testing();
+  };
+
+}
+
 
 # CEP350 protein coding gene with 5 prime utr exons on + strand of genome
 

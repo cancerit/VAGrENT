@@ -190,18 +190,14 @@ sub _buildRNAAnnotation {
 	}
 
 	if($tran->isProteinCoding){
-    #print "HERE\n";
     if(($pos > $tran->getCdsMinPos || ($pos == $tran->getCdsMinPos && $offset >= 0)) && 
        ($pos < $tran->getCdsMaxPos || ($pos == $tran->getCdsMaxPos && $offset <= 0))){
-#		if($pos >= $tran->getCdsMinPos && $pos <= $tran->getCdsMaxPos){
 			# coding change
 			push(@groupClasses,$self->getCDSClass);
 		} elsif($pos < $tran->getCdsMinPos || ($pos == $tran->getCdsMinPos && $offset < 0)){
-#    } elsif($pos < $tran->getCdsMinPos){
 			# 5prime UTR
 			push(@groupClasses,$self->get5PrimeUtrClass);
 		} elsif($pos > $tran->getCdsMaxPos || ($pos == $tran->getCdsMaxPos && $offset > 0)){
-#    } elsif($pos > $tran->getCdsMaxPos){
 			# 3prime UTR
 			push(@groupClasses,$self->get3PrimeUtrClass);
 		} else {
