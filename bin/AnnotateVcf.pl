@@ -33,6 +33,8 @@ use Pod::Usage;
 use Data::Dumper;
 
 use List::Util qw(first);
+use File::Temp qw(tempfile);
+use Try::Tiny qw(try catch);
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
@@ -76,6 +78,10 @@ const my $INFO_COL => 7;
 const my $REPRE_BM => Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker->new();
 const my $WORST_BM => Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker->new();
 
+const my $SORT_CMD => 'cat %s | vcf-sort > %s';
+const my $BGZIP_CMD => 'bgzip %s';
+const my $TABIX_CMB => 'tabix -p vcf %s';
+
 
 my $header_already_parsed = 0;
 
@@ -86,12 +92,22 @@ eval {
   unless(defined $options->{'species'} && defined $options->{'assembly'}) {
     croak 'unable to determine species and assembly from VCF file, please specify on command line' unless find_species_in_vcf($vcf_in,$options);
   }
-  open my $OUT_FH, '>', $options->{'output'} or croak 'Failed to create: '.$options->{'output'};
+  my $output = $options->{'output'};
+  if($options->{'tabix'}){
+    (undef,$output) = tempfile('vagrentXXXXXXX', OPEN => 0, SUFFIX => '.vcf');
+  }
+
+  open my $OUT_FH, '>', $output or croak 'Failed to create: '.$output;
   my $annotator = get_annotator($options);
 
   process_data($vcf_in,$OUT_FH,$annotator,$options);
-  close $OUT_FH or croak 'Failed to close: '.$options->{'output'};
-  Vcf::validate($options->{'output'});
+  close $OUT_FH or croak 'Failed to close: '.$output;
+  Vcf::validate($output);
+
+  if($options->{'tabix'}){
+    compressAndIndex($options,$output);
+  }
+
   1;
 } or do {
   warn "EVAL_ERROR: $EVAL_ERROR\n" if($EVAL_ERROR);
@@ -99,6 +115,44 @@ eval {
   warn "OS_ERROR: $OS_ERROR\n" if($OS_ERROR);
   croak 'A problem occurred';
 };
+
+sub compressAndIndex {
+  my ($options, $tmpfile) = @_;
+  
+  my $sort_cmd = sprintf $SORT_CMD, $tmpfile, $options->{'output'};
+  my $bgzip_cmd = sprintf $BGZIP_CMD, $options->{'output'};
+  my $totabix = $options->{'output'} .'.gz';
+  my $tabix_cmd = sprintf $TABIX_CMB, $totabix;
+  
+  try {
+    my $tabix_in = $options->{'input'}.'.tbx';
+    unless(-e $tabix_in){
+      # If the input has a tabix index it must have already been sorted, 
+      # we haven't changed the order of the file so we can skip this sort
+      system($sort_cmd);
+    }
+    
+  } catch {
+    warn "EXECUTION ERROR: $sort_cmd\n";
+    die $_;
+  };
+
+  try {
+    system($bgzip_cmd);
+  } catch {
+    warn "EXECUTION ERROR: $bgzip_cmd\n";
+    die $_;
+  };
+
+  try {
+    system($tabix_cmd);
+  } catch {
+    warn "EXECUTION ERROR: $tabix_cmd\n";
+    die $_;
+  };
+
+  unlink $tmpfile;
+}
 
 sub process_data {
   my ($in,$out,$anno,$opts) = @_;
@@ -407,6 +461,7 @@ sub option_builder {
     'i|input=s' => \$opts{'input'},
     'o|output=s' => \$opts{'output'},
     'c|cache=s' => \$opts{'cache'},
+    't|tabix' => \$opts{'tabix'},
     'p|process=n' => \$opts{'process'},
     'sp|species=s' => \$opts{'species'},
     'as|assembly=s' => \$opts{'assembly'},
@@ -443,7 +498,7 @@ AnnotateVcf.pl - Annotate variants - Sub/Snp, Insertion, Deletion, ComplexInDel
 
 =head1 SYNOPSIS
 
-AnnotateVcf.pl [-h] -i <IN_FILE> -o <OUT_FILE> -c <VAGRENT_CACHE_FILE>
+AnnotateVcf.pl [-h] [-t] -i <IN_FILE> -o <OUT_FILE> -c <VAGRENT_CACHE_FILE> [-sp <SPECIES> -as <GENOME_VERSON>]
 
   General Options:
 
@@ -451,7 +506,7 @@ AnnotateVcf.pl [-h] -i <IN_FILE> -o <OUT_FILE> -c <VAGRENT_CACHE_FILE>
 
     --input     (-i)      Input vcf file (expects *.bgz)
 
-    --output    (-o)      Output vcf
+    --output    (-o)      Output vcf file (plain text, add -t for zip and index)
 
     --cache     (-c)      Vagrent reference data cache file
 
@@ -466,5 +521,7 @@ AnnotateVcf.pl [-h] -i <IN_FILE> -o <OUT_FILE> -c <VAGRENT_CACHE_FILE>
     --version   (-v)      Output version number
 
     --process   (-p)      ID_PROCESS that generated this file
+
+    --tabix     (-t)      bgzip and tabix index the output file (will generate the .gz version of the -o option)
 
 =cut
