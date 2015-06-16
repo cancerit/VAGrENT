@@ -79,11 +79,28 @@ sub convertGtf {
   my $c = 0;
 	my $wip;
 	my $currentChr = undef;
+  my $lc = 0;
   while(<$inFh>){
+    $lc++;
     next if m/^#/;
+    my $line = $_;
+    chomp $line;
+
     my $acc;
-    my ($chr,$bioType,$lineType, $start, $end, $strand, $frame, %attr);
-    ($chr,$bioType,$lineType, $start, $end, undef, $strand, $frame, %attr) = split /\s+/;
+
+    my ($chr,$bioType,$lineType, $start, $end, $strand, $frame, $tmpAttr, %attr);
+
+    ($chr,$bioType,$lineType, $start, $end, undef, $strand, $frame, $tmpAttr) = split /\t/, $line;
+
+    foreach my $t(split /\; /, $tmpAttr){
+      my ($k,$v) = split /\s/,$t,2;
+      $attr{$k} = $v;
+    }
+
+    if(exists $attr{'transcript_biotype'} && defined $attr{'transcript_biotype'} ){
+      $bioType = unquoteValue($attr{'transcript_biotype'});
+    }
+
     if(exists $attr{'transcript_id'} && defined $attr{'transcript_id'}){
 			$acc = unquoteValue($attr{'transcript_id'});
 			next unless exists $lookup->{$acc};
