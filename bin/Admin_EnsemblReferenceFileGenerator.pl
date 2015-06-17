@@ -52,11 +52,13 @@ const my $FILTERED_FASTA_SUFFIX => 'vagrent.fa';
 const my $CACHE_SUFFIX_GZ => 'vagrent.cache.gz';
 const my $CACHE_SUFFIX_RAW => 'vagrent.cache.raw';
 const my @TRANSCRIPT_BIOTYPES => qw(protein_coding lincRNA miRNA snoRNA rRNA snRNA);
-const my $ENSEMBL_FASTA => qr/([^\.]+)\.(.+)\.(\d+)\..+?\.fa\.gz/;
+const my $ENSEMBL_SPECIES_ASSEMBLY => qr/([^\.]+?)\.(.+?)\./;
+const my $ENSEMBL_VERSION_PATTERN => qr/^ftp\:\/\/ftp\.ensembl\.org\/pub\/release\-(\d+?)\//;
 
 try {
   my $opts = option_builder();
 	my $urls = getFileUrlsForRetrival($opts);
+
 	print "Downloading Files -------- ";
 	my ($codFasta, $ncFasta, $gtf) = downloadFiles($urls);
   print "Done\n";
@@ -130,11 +132,11 @@ sub createFilePathFromFasta {
 	my ($opts, $inFa, $suffix) = @_;
 	my ($vol,$dirs,$file) = File::Spec->splitpath($inFa);
 	my $outFa;
-	if($file =~ m/$ENSEMBL_FASTA/){
-		$outFa = File::Spec->catfile($opts->{'o'},"$1.$2.$3.$suffix");
-	} else {
-		croak("unable to match file name: $inFa");
-	}
+  if($file =~ m/$ENSEMBL_SPECIES_ASSEMBLY/){
+    $outFa = File::Spec->catfile($opts->{'o'},"$1.$2.".$opts->{'e_version'}.".$suffix");
+  } else {
+    croak("unable to match species and assembly from file name: $inFa");
+  }
 	return $outFa;
 }
 
@@ -227,6 +229,12 @@ sub option_builder {
   	pod2usage('CCDS file unreadable') unless -e $opts{'c'} && -r $opts{'c'};
   }
   $opts{'f'} =~ s|/$||;
+  if($opts{'f'} =~ m/$ENSEMBL_VERSION_PATTERN/){
+    $opts{'e_version'} = $1;
+  } else {
+    pod2usage('Unable to parse Ensembl version from URL');
+  }
+
   return \%opts;
 }
 
