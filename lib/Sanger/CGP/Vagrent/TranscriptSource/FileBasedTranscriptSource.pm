@@ -137,7 +137,7 @@ sub _getTranscriptsFromCache {
   my $res = $self->{_cache_tbx}->query($gp->getChr(),$min,$max);
   return undef unless defined $res;
   my $out = undef;
-  if(defined $res){
+  if(defined $res->get){
     while(my $ret = $self->{_cache_tbx}->read($res)){
       my $raw = (split("\t",$ret))[6];
       my $VAR1;
