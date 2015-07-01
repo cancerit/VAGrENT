@@ -21,7 +21,7 @@ use strict;
 #----------------------------------------------------------------------------------
  sub open_to_read
  {
-     my ($sel,$File) = @_;   
+     my ($self,$File) = @_;   
      my $rfh;
        
      unless(open($rfh,"$File"))
@@ -34,6 +34,14 @@ use strict;
 }
 
 #----------------------------------------------------------------------------------
+
+
+
+sub getSeq {
+	my ($self,$fai,$chr,$start,$end)=@_;
+	my $dna = $fai->fetch("$chr:$start-$end");
+	return $dna;
+}
 
 
 

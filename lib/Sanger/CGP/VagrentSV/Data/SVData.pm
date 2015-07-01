@@ -3,7 +3,7 @@ package Sanger::CGP::VagrentSV::Data::SVData;
 use strict;
 use Data::Dumper;
 use Sanger::CGP::Vagrent qw($VERSION);
-use base qw(Sanger::CGP::VagrentSV::Data::AbstractVariation );
+use base qw(Sanger::CGP::Vagrent::Data::AbstractVariation );
 
 1;
 

@@ -111,6 +111,11 @@ sub getLength {
   return (($self->{_maxpos} - $self->{_minpos}) + 1);
 }
 
+# added for SV
+sub getStrand {
+	return shift->{_strand};
+}
+
 __END__
 
 =head1 NAME

@@ -33,6 +33,30 @@ sub isValid {
 	shift->throw_not_implemented;
 }
 
+sub getSvType {
+	return shift->{_svtype};
+}
+
+sub getSVName {
+	return shift->{_name};
+}
+
+sub getLocFlag {
+	return shift->{_locflag};
+}
+
+sub getLhb {
+	return shift->{_lhb};
+}
+sub getRhb {
+	return shift->{_rhb};
+}
+
+sub getInb {
+	return shift->{_inb};
+}
+
+
 __END__
 
 =head1 NAME

@@ -7,7 +7,7 @@ use Const::Fast qw(const);
 use Sanger::CGP::Vagrent qw($VERSION);
 use Sanger::CGP::VagrentSV::SVConstants;
 use Sanger::CGP::VagrentSV::Data::SVData;
-use base qw(Sanger::CGP::VagrentSV::Data::AbstractVariation);
+use base qw(Sanger::CGP::Vagrent::Data::AbstractVariation);
 
 
 

@@ -56,12 +56,10 @@ const my $TRANSCRIPT_GRAB_TEMPLATE => q{tabix %s %s | awk '$5 == "%s" { print $0
 
 sub getTranscripts {
   my ($self,$gp) = @_;
-  unless(defined($gp) && $gp->isa('Sanger::CGP::VagrentSV::Data::AbstractGenomicPosition')){
-    $log->error("Did not recieve a Sanger::CGP::VagrentSV::Data::AbstractGenomicPosition object");
-     print Dumper $gp;
+  unless(defined($gp) && $gp->isa('Sanger::CGP::Vagrent::Data::AbstractGenomicPosition')){
+    $log->error("Did not recieve a Sanger::CGP::Vagrent::Data::AbstractGenomicPosition object");
     return undef;
   }
- 
   my $trans = $self->_getTranscriptsFromCache($gp);
   return @$trans if defined $trans;
   return;
@@ -147,7 +145,6 @@ sub _getTranscriptsFromCache {
       push @$out, $VAR1;
     }
   }
- 
   return $out;
 }
 

@@ -45,20 +45,26 @@ use Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker;
 use Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker;
 
 # annotators
-use Sanger::CGP::VagrentSV::Annotators::AnnotatorCollection;
-use Sanger::CGP::VagrentSV::Annotators::SimpleSubstitutionAnnotator;
+use Sanger::CGP::Vagrent::Annotators::AnnotatorCollection;
+use Sanger::CGP::Vagrent::Annotators::SimpleSubstitutionAnnotator;
 use Sanger::CGP::Vagrent::Annotators::InsertionAnnotator;
 use Sanger::CGP::Vagrent::Annotators::DeletionAnnotator;
 use Sanger::CGP::Vagrent::Annotators::ComplexIndelAnnotator;
 
+use Sanger::CGP::Vagrent::Data::Substitution;
 use Sanger::CGP::Vagrent::Data::Transcript;
+
+# Transcripts 
+use Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource;
+
+
 
 # SV modules
 use Sanger::CGP::VagrentSV::Data::BreakPoint;
 use Sanger::CGP::VagrentSV::Data::StructuralVariation;
-use Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource;
-use Sanger::CGP::VagrentSV::SVConstants;
-use Sanger::CGP::VagrentSV::Annotators::AnnotateBreakpoint;
+
+use Sanger::CGP::Vagrent::SVConstants;
+use Sanger::CGP::Vagrent::Annotators::AnnotateBreakpoint;
 
 const my $REPRE_BM => Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker->new();
 const my $WORST_BM => Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker->new();
@@ -96,7 +102,8 @@ sub _read_sv_annotation {
 	my($rfh)=Sanger::CGP::VagrentSV::Base->open_to_read($opts->{'input'});
 	my ($fai)=$self->_get_genome_object($opts->{'genome'});
 	my ($chr_lengths)=$self->_get_chromosome_length($opts->{'genome'}.'.fai');
-	#my ($annotator)=get_annotator($opts);	
+	
+	my ($annotator)=get_annotator($opts);	
 	# get chache
 	my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => $opts->{'cache'}, 'search_pad' => $Sanger::CGP::VagrentSV::SVConstants::PADDING_BUFFER_TR );
 
@@ -117,26 +124,32 @@ sub _read_sv_annotation {
 
 		next if $svtype ne 'del';
 		# left hand break point
-		my $lhb = Sanger::CGP::VagrentSV::Data::BreakPoint->new(	'species'	=> $opts->{'species'},
+		my $wt_seq1 = Sanger::CGP::VagrentSV::Base->getSeq($fai,$bp1_chr,$bp1_pos,$bp1_pos);
+		my $wt_seq2 = Sanger::CGP::VagrentSV::Base->getSeq($fai,$bp2_chr,$bp2_pos,$bp2_pos);
+
+		my $lhb = Sanger::CGP::VagrentSV::Data::BreakPoint->new(	'species'				=> $opts->{'species'},
 																															'genomeVersion' => $opts->{'assembly'},
 																															'chr'	          => $bp1_chr,
 																															'minpos'        => $bp1_pos -1, # include reference base 
 																															'maxpos'        => $bp1_pos,
 																															'strand'				=> $bp1_strand,
-																															#'insseq'				=> 'A'
+																															'wt'						=> $wt_seq1,
+																															'mt'						=> 'A'	
 																															);
 		# right hand break point
-		my $rhb = Sanger::CGP::VagrentSV::Data::BreakPoint->new(	'species'	=> $opts->{'species'},
+		
+		my $rhb = Sanger::CGP::VagrentSV::Data::BreakPoint->new(	'species'				=> $opts->{'species'},
 																															'genomeVersion' => $opts->{'assembly'},
 																															'chr'	          => $bp2_chr,
 																															'minpos'        => $bp2_pos -1, # include reference base 
 																															'maxpos'        => $bp2_pos,
 																															'strand'				=> $bp2_strand,
-																															#'insseq'				=> 'A'	
+																															'wt'						=> $wt_seq2,
+																															'mt'						=> 'A'	
 																															);
 	  
 	
-		my $inb = Sanger::CGP::VagrentSV::Data::BreakPoint->new(	'species'	=> $opts->{'species'},
+		my $inb = Sanger::CGP::VagrentSV::Data::BreakPoint->new(	'species'				=> $opts->{'species'},
 																															'genomeVersion' => $opts->{'assembly'},
 																															'chr'	          => $bp2_chr,
 																															'minpos'        => $bp1_pos -1, # include reference base 
@@ -168,8 +181,10 @@ sub _read_sv_annotation {
 		
 		
 		
-		#print Dumper $sv;
-		my($sv_data)=$sv->getDisruptedGenes($ts,$fai,$chr_lengths);
+		 
+		# a straight insertion
+  
+		#my($sv_data)=$sv->getDisruptedGenes($ts,$fai,$chr_lengths);
 		
 		#print Dumper $sv_data;
 
@@ -184,13 +199,20 @@ sub _read_sv_annotation {
 		#exit;
 		#$sv->getLHS->getMaxpos
 		
-		#my $var=Sanger::CGP::Vagrent::Data::Deletion->new(%$params);
-		
-		#my @groups=annotate($annotator,$fused_obj);
+		my $var=Sanger::CGP::Vagrent::Data::Substitution->new('species'				=> $opts->{'species'},
+																															'genomeVersion' => $opts->{'assembly'},
+																															'chr'	          => $bp1_chr,
+																															'minpos'        => $bp1_pos -1, # include reference base 
+																															'maxpos'        => $bp1_pos,
+																															'strand'				=> $bp1_strand,
+																															'wt'						=> $wt_seq1,
+																															'mt'						=> 'A'	);
+		print Dumper $lhb;
+		my @groups=annotate($annotator,$var);
 		#print Dumper  @groups;
 		#exit;
 		
-		$self->_writeBedpe($_,$sv_data);
+		#$self->_writeBedpe($_,$sv_data);
 	}
 
   
@@ -298,14 +320,38 @@ sub get_annotator {
 	my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => $options->{'cache'},'search_pad' => $Sanger::CGP::VagrentSV::SVConstants::PADDING_BUFFER_TR);
 
 	# creating an AnnotatorCollection
-	my $annotator = Sanger::CGP::VagrentSV::Annotators::AnnotatorCollection->new(
+	my $annotator = Sanger::CGP::Vagrent::Annotators::AnnotatorCollection->new(
 							bookmarker => [$REPRE_BM,$WORST_BM],
 							only_bookmarked => 1);
 
 	# creating and adding a SimpleSubstitutionAnnotator to the AnnotatorCollection
-	$annotator->addAnnotator(Sanger::CGP::VagrentSV::Annotators::SimpleSubstitutionAnnotator->new(transcriptSource => $ts, ontologySymmary => $annotator->getSummaryCache));
+	$annotator->addAnnotator(Sanger::CGP::Vagrent::Annotators::SimpleSubstitutionAnnotator->new(transcriptSource => $ts, ontologySymmary => $annotator->getSummaryCache));
+	
 	return $annotator;
 }
+
+
+
+sub get_annotator_complete {
+	my $options = shift;
+
+  # creating an EnsemblTranscriptSource using the Ensembl registry
+	my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => $options->{'cache'});
+
+	# creating an AnnotatorCollection
+	my $annotator = Sanger::CGP::Vagrent::Annotators::AnnotatorCollection->new(
+							bookmarker => [$REPRE_BM,$WORST_BM],
+							only_bookmarked => 1);
+
+	# creating and adding a SimpleSubstitutionAnnotator to the AnnotatorCollection
+	$annotator->addAnnotator(Sanger::CGP::Vagrent::Annotators::SimpleSubstitutionAnnotator->new(transcriptSource => $ts, ontologySymmary => $annotator->getSummaryCache));
+	$annotator->addAnnotator(Sanger::CGP::Vagrent::Annotators::InsertionAnnotator->new(transcriptSource => $ts, ontologySymmary => $annotator->getSummaryCache));
+	$annotator->addAnnotator(Sanger::CGP::Vagrent::Annotators::DeletionAnnotator->new(transcriptSource => $ts, ontologySymmary => $annotator->getSummaryCache));
+	$annotator->addAnnotator(Sanger::CGP::Vagrent::Annotators::ComplexIndelAnnotator->new(transcriptSource => $ts, ontologySymmary => $annotator->getSummaryCache));
+
+	return $annotator;
+}
+
 
 
 sub _writeBedpe {
@@ -328,6 +374,7 @@ sub _getString {
   	return "NA";
   }
 }
+
 
 1;
 
