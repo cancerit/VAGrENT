@@ -56,6 +56,7 @@ sub _getAnnotation {
  		return undef;
  	}
  	my @trans = $self->_getTranscriptSource->getTranscripts($var);
+ 	
  	unless(defined($trans[0])){
  		my $msg = 'No transcripts returned from transcript source';
  		$self->addMessage($msg);
@@ -77,6 +78,8 @@ sub _getAnnotation {
  	}
  	return @groups;
 }
+
+
 
 sub _generateAnnotatonGroup {
  	my ($self,$var,$tran) = @_;
@@ -142,7 +145,9 @@ sub _buildRNAAnnotation {
 		$log->error($msg);
 		return undef;
 	}
-
+	
+	print join(",","A",$mrnaMin,$mrnaMinOffset,$mrnaMax,$mrnaMaxOffset),"\n";
+	
 	# This should simplify things from here on in, only need one position and one offset
 	# we have just checked that they are the same
 	my $pos = $mrnaMin;
@@ -153,6 +158,8 @@ sub _buildRNAAnnotation {
 	my $subtype = undef;
 	my @classes = ($self->getSubstitutionClass);
 	my @groupClasses = ($self->classifyTranscript($tran));
+
+	print join(",","B",$mrnaMin,$mrnaMinOffset,$mrnaMax,$mrnaMaxOffset),"\n";
 
 	if($pos == 0){
 		# the variant is off the transcript, have to do the up/down stream check
@@ -188,6 +195,8 @@ sub _buildRNAAnnotation {
 			return undef;
 		}
 	}
+	
+	print join(",","C",$mrnaMin,$mrnaMinOffset,$mrnaMax,$mrnaMaxOffset),"\n";
 
 	if($tran->isProteinCoding){
     if(($pos > $tran->getCdsMinPos || ($pos == $tran->getCdsMinPos && $offset >= 0)) && 
@@ -207,9 +216,12 @@ sub _buildRNAAnnotation {
 			return undef;
 		}
 	}
-
+	
+	print join(",","D",$mrnaMin,$mrnaMinOffset,$mrnaMax,$mrnaMaxOffset),"\n";
+	
 	if($self->_isIntronicOffsetDistance($offset)){
 		# its intronic
+		print "HELLO\n";
 		push(@groupClasses,$self->getIntronClass);
 		return ($self->_buildUnknownMRNAAnnotation($var,$tran,$self->getSubstitutionClass,$self->getIntronVariantClass),@groupClasses);
 	}

@@ -65,7 +65,10 @@ sub getAnnotation {
 	return $self->_getAnnotation(@groups);
 }
 
+
+
 sub _getAnnotation: Abstract;
+
 
 sub _init {
 	my $self = shift;

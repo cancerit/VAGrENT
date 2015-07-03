@@ -76,6 +76,25 @@ sub _getAnnotation {
 	return @groups;
 }
 
+
+#SV
+sub _getTranscriptAnnotation {
+		my($self,$var,$t)=@_;
+		$self->_clearMessages();
+ 		unless(defined($var) && $var->isa('Sanger::CGP::Vagrent::Data::Insertion')){
+ 			my $msg = 'require a Sanger::CGP::Vagrent::Data::Insertion object, not a '.ref($var);
+ 			$self->addMessage($msg);
+ 			$log->info($msg);
+ 			return undef;
+ 		}
+		my $g = $self->_generateAnnotatonGroup($var,$t);
+		unless($g) {
+			return undef;
+		}
+		return ([$g]);
+}
+
+
 sub _generateAnnotatonGroup {
 	my ($self,$var,$tran) = @_;
 	my ($rAnnot,@groupClasses) = $self->_buildRNAAnnotation($var,$tran);

@@ -45,6 +45,24 @@ sub _getAnnotation {
 	return @ans;
 }
 
+
+sub _getTranscriptAnnotation {
+	my ($self,$var,$t) = @_;
+	return undef unless( defined($var) && $var->isa('Sanger::CGP::Vagrent::Data::AbstractVariation'));
+	my @ans;
+	foreach my $ma(@{$self->{_collection}}){
+		my @tmp = $ma->getTranscriptAnnotation($var,$t);
+		foreach my $t(@tmp){
+			next unless(defined($t));
+			push(@ans,$t);
+		}
+	}
+	return @ans;
+}
+
+
+
+
 sub addAnnotator {
 	my ($self,$ma) = @_;
 	if($ma->isa('Sanger::CGP::Vagrent::Annotators::AbstractAnnotator')){

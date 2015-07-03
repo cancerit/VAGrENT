@@ -44,7 +44,7 @@ use lib "$Bin/../lib";
 use Sanger::CGP::Vagrent;
 
 # InputObject
-use Sanger::CGP::VagrentSV::AnnotateSV;
+use Sanger::CGP::VagrentSV::VagrentSV;
 
 #td, tandem duplication
 #del, interstitial deletion
@@ -60,7 +60,7 @@ my $header_already_parsed = 0;
 
 eval {
 	my $options = option_builder();
-  Sanger::CGP::VagrentSV::AnnotateSV->new($options);
+  Sanger::CGP::VagrentSV::VagrentSV->new($options);
    
   1;
 } or do {

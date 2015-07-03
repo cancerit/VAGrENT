@@ -79,7 +79,18 @@ sub getAnnotation {
 	return @ann;
 }
 
+
+
+sub getTranscriptAnnotation {
+	my ($self,$var,$t) = @_;
+	my @ann = $self->_getTranscriptAnnotation($var,$t);
+	return @ann;
+}
+
+
+
 sub _getAnnotation: Abstract;
+sub _getTranscriptAnnotation: Abstract;
 
 sub addMessage {
 	my ($self,$msg) = @_;
