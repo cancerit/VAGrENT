@@ -147,8 +147,9 @@ sub downloadFiles {
 	foreach my $url(@$urls){
 		my $file = $tmpDir.'/'.(split /\//, $url)[-1];
 		push @out, $file;
-		my $rc = getstore($url, $file);
-    croak "An error occured when retrieving $url\n" if(is_error($rc));
+		`wget $file -P $tmpDir/`;
+		#my $rc = getstore($url, $file);
+		#croak "An error occured when retrieving $url\n" if(is_error($rc));
 	}
 	return @out;
 }
@@ -174,7 +175,7 @@ sub getFileUrlsForRetrival {
   	my $root = shift @comps; # remove ftp:
   	my $host = shift @comps;
   	my $path = join '/', @comps;
-		my $ftp = Net::FTP->new($host, Debug => 0) or croak "Failed to connect (ftp) to $host\n\t$EVAL_ERROR";
+		my $ftp = Net::FTP->new($host, Debug => 0, Passive => 1) or croak "Failed to connect (ftp) to $host\n\t$EVAL_ERROR";
 	  $ftp->login or croak "Failed to login (ftp) to $host\n\t", $ftp->message;
   	my @files = $ftp->ls($path) or croak "Failed to list directory $path on $host (ftp)\n\t", $ftp->message;
   	$ftp->quit;
