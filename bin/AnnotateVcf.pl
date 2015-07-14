@@ -288,7 +288,8 @@ sub parse_vcf_record {
   # a straight deletion
   if($ref_len > 1 && $alt_len == 1) {
     my $min = $pos + 1; # as vcf records base before for non-insert
-    my $max = $min + ($vcf->get_info_field($record->[$INFO_COL], 'LEN') - 1);
+    my $max = $min + $ref_len - 1);
+    
     $var = Sanger::CGP::Vagrent::Data::Deletion->new(
 							'species'				=> $opts->{'species'},
 							'genomeVersion' => $opts->{'assembly'},
