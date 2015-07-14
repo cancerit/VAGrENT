@@ -32,7 +32,7 @@ use Getopt::Long;
 use Pod::Usage;
 use Data::Dumper;
 
-use List::Util qw(first);
+use List::Util qw(first max);
 use File::Temp qw(tempfile);
 use Try::Tiny qw(try catch);
 
@@ -288,7 +288,8 @@ sub parse_vcf_record {
   # a straight deletion
   if($ref_len > 1 && $alt_len == 1) {
     my $min = $pos + 1; # as vcf records base before for non-insert
-    my $max = $min + ($vcf->get_info_field($record->[$INFO_COL], 'LEN') - 1);
+    my $max = $min + ($ref_len - 1);
+    
     $var = Sanger::CGP::Vagrent::Data::Deletion->new(
 							'species'				=> $opts->{'species'},
 							'genomeVersion' => $opts->{'assembly'},
@@ -321,7 +322,8 @@ sub parse_vcf_record {
   # complex indel
   elsif($ref_len > 1 && $alt_len > 1) {
     my $min = $pos + 1; # as vcf records base before for non-insert
-    my $max = $min + ($vcf->get_info_field($record->[$INFO_COL], 'LEN') - 1);
+    my $len = max($ref_len, $alt_len) - 1;
+    my $max = $min + $len;
     $var = Sanger::CGP::Vagrent::Data::ComplexIndel->new(
 							'species'				=> $opts->{'species'},
 							'genomeVersion' => $opts->{'assembly'},
