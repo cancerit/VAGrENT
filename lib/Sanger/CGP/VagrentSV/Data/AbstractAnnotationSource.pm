@@ -1,4 +1,4 @@
-package Sanger::CGP::VagrentSV::Annotators::AbstractSVAnnotator;
+package Sanger::CGP::VagrentSV::Data::AbstractAnnotationSource;
 																					 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
@@ -30,7 +30,7 @@ use Data::Dumper;
 use Attribute::Abstract;
 
 use Sanger::CGP::Vagrent qw($VERSION);
-
+use Sanger::CGP::VagrentSV::Base;
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);
 
@@ -43,7 +43,6 @@ sub new {
 	my $self = {};
 	bless($self, $class);
 	$self->_init(@_);
-	$self->_localInit(@_);
 	return $self;
 }
 
@@ -51,28 +50,38 @@ sub new {
 sub _init {
 	my $self = shift;
 	my %vars = @_;
-	foreach my $k(keys(%vars)){
-		if($k eq 'transcriptSource' && $vars{'transcriptSource'}->isa('Sanger::CGP::Vagrent::TranscriptSource::AbstractTranscriptSource')){
-			$self->{'_transcriptSource'} = $vars{'transcriptSource'};
-		} elsif($k eq 'debug' && $vars{'debug'}){
-			$self->{'_debug'} = 1;
-		}
-	}
-	$self->{_subannot} = Sanger::CGP::Vagrent::Annotators::InsertionAnnotator->new(transcriptSource => $self->{'_transcriptSource'});
+	$self->{'tabix'}=$self->_getTabixIndex($vars{'annotationSource'});
 }
 
+
+=head2 _getTabixIndex
+create tabix object using tabix indexed bed file
+Inputs
+=over 2
+=item options -user input paramaters
+=back
+=cut
+
+sub _getTabixIndex {
+	my ($self,$annotation_source)=@_;
+	my $cmd;
+	if(-e $annotation_source){
+		$cmd= "bgzip $annotation_source";
+		Sanger::CGP::VagrentSV::Base->_run_cmd($cmd);
+	}
+	if(-e "$annotation_source.gz" && (! -e "$annotation_source.gz.tbi") ){
+		$cmd="tabix -p bed $annotation_source.gz";
+		Sanger::CGP::VagrentSV::Base->_run_cmd($cmd);
+	}
+	elsif(! -e "$annotation_source.gz.tbi"){
+		$log->logcroak("Unable to find input file:".$annotation_source);
+	}
+	my $tabix_obj = new Tabix(-data => $annotation_source.'.gz');
+	$log->debug("Tabix object created successfully");
+	return $tabix_obj;
+}
 
 sub _localInit: Abstract;
-
-sub getSVannotator {
-	return shift->{_subannot};
-}
-
-sub getSeq {
-	my($self,$seq,$start,$stop)=@_;
-	#print Dumper "$start--$stop";		
-	return substr($seq, $start - 1, $stop);
-}
 
 sub addMessage {
 	my ($self,$msg) = @_;
@@ -97,16 +106,6 @@ sub getMessages {
 sub _clearMessages {
 	shift->{_msg} = undef;
 }
-
-
-sub _arrayHasString {
-	my ($self,$val,@arr) = @_;
-	foreach my $a (@arr){
-		return 1 if $a eq $val;
-	}
-	return 0;
-}
-
 
 
 __END__

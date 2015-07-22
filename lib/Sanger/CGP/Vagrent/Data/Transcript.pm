@@ -195,6 +195,28 @@ sub getmRNALength {
   return $self->{_mrnalength};
 }
 
+# SV --------------
+
+sub setCdsMaxPos {
+	my ($self,$pos)=@_;
+	if(defined $pos){
+		$self->{_cdsmaxpos} = $pos;
+	}
+}
+
+sub setCdsMinPos {
+	my ($self,$pos)=@_;
+	if(defined $pos){
+		$self->{_cdsminpos} = $pos;
+	}
+}
+
+
+# -----------------
+
+
+
+
 
 sub getGenomicMinPos {
 	return shift->{_genomicminpos};

@@ -33,13 +33,14 @@ use Try::Tiny qw(try catch);
 
 use Sanger::CGP::Vagrent qw($VERSION);
 use Sanger::CGP::VagrentSV::Base;
-use Bio::DB::Sam;
+
 use FindBin qw($Bin);
 Log::Log4perl->init("$Bin/../config/log4perl.vagrentsv.conf");
 my $log = Log::Log4perl->get_logger(__PACKAGE__);
 
 
 # reference data storage
+use Sanger::CGP::VagrentSV::Data::GenomeSeq;
 # bookmarkers
 use Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker;
 use Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker;
@@ -54,6 +55,9 @@ use Sanger::CGP::Vagrent::Annotators::ComplexIndelAnnotator;
 use Sanger::CGP::Vagrent::Data::Substitution;
 use Sanger::CGP::Vagrent::Data::Transcript;
 
+
+
+
 # Transcripts 
 use Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource;
 
@@ -67,9 +71,20 @@ use Sanger::CGP::VagrentSV::Data::StructuralVariation;
 
 use Sanger::CGP::VagrentSV::SVConstants;
 use Sanger::CGP::VagrentSV::Annotators::SVAnnotator;
+use Sanger::CGP::VagrentSV::Annotators::BreakPointTranscripts;
+use Sanger::CGP::VagrentSV::Annotators::FusionGeneAnnotator;
+use Sanger::CGP::VagrentSV::Results::TranscriptResults;
+use Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource;
+
 
 const my $REPRE_BM => Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker->new();
 const my $WORST_BM => Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker->new();
+
+my @header=qw/chr lStart lEnd chr rStart rEnd name score lStrand rStrand microHomoLen cancer_type patientId sampleId
+ lExon\/rExon lTranscript\/rTranscript lGeneStrand\/rGeneStrand 
+ lAnnotation\/rAnnotation lGene\/rGene SpannedGenes
+ lPromoterL\/lPromoterR rPromoterL\/rPromoterR 
+ lEnhancerL\/lEnhancerR rEnhancerL\/rEnhancerR/; 
 
 
 sub new {
@@ -101,18 +116,29 @@ score[7]    strand_1[8] strand2[9] MicroHLen[10] CancerType[11]    Patient_ID[12
 
 sub _read_sv_annotation {
 	my ($self,$opts)=@_;
+	my ($genome)= Sanger::CGP::VagrentSV::Data::GenomeSeq->new( 'fasta' => $opts->{'genome'}, 'index' => $opts->{'genome'}.'.fai' );
+	my($outfile)=Sanger::CGP::VagrentSV::Base->open_to_write($opts->{'input'}.'.outttt');
 	my($rfh)=Sanger::CGP::VagrentSV::Base->open_to_read($opts->{'input'});
-	my ($fai)=$self->_get_genome_object($opts->{'genome'});
-	my ($chr_lengths)=$self->_get_chromosome_length($opts->{'genome'}.'.fai');
-	
+	#my ($fai)=$self->_get_genome_object($opts->{'genome'});
+	#my ($chr_lengths)=$self->_get_chromosome_length($opts->{'genome'}.'.fai');
 	my ($annotator)=get_annotator($opts);	
 	# get chache
 	my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => $opts->{'cache'}, 'search_pad' => $Sanger::CGP::VagrentSV::SVConstants::PADDING_BUFFER_TR );
-
+	my $bpa = Sanger::CGP::VagrentSV::Annotators::SVAnnotator->new(transcriptSource => $ts);
+	my $bptr = Sanger::CGP::VagrentSV::Annotators::BreakPointTranscripts->new(transcriptSource => $ts);
+	my $fga = Sanger::CGP::VagrentSV::Annotators::FusionGeneAnnotator->new(transcriptSource => $ts);
+	my $promoter = Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource->new(annotationSource => '/nfs/users/nfs_s/sb43/scratch_tmp_storage_not_backed_up/vagrentSV_data/refdata/genome_features/gc19.flat.prom_per_gene.pc.bed');
+	my $enhancer = Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource->new(annotationSource => '/nfs/users/nfs_s/sb43/scratch_tmp_storage_not_backed_up/vagrentSV_data/refdata/genome_features/roadmap_stringent_enhancers_with_Ensembl_ID_and_name.bed.txt');
+	
+	
 	my $counter;
+	
+	print $outfile join("\t", @header)."\n";
+	
 	while(<$rfh>) {
 		my ($chr_flag,$lparams,$lparams,$offset);
 		$counter ++;
+		chomp;
 		my($bp1_chr,$bp1_pos,$bp2_chr,$bp2_pos,$name,$bp1_strand,$bp2_strand,$length)=(split "\t", $_ )[0,2,3,5,6,8,9,10];
 		#check if SV is on same chromosome
 		if(	$bp1_chr eq $bp2_chr) { $chr_flag=1; }
@@ -145,69 +171,39 @@ sub _read_sv_annotation {
 																															'strand'				=> $bp2_strand,
 																															);
 	  
-	
-		#my $inb = Sanger::CGP::VagrentSV::Data::BreakPoint->new(	'species'				=> $opts->{'species'},
-		#																													'genomeVersion' => $opts->{'assembly'},
-		#																													'chr'	          => $bp2_chr,
-		#																													'minpos'        => $bp1_pos -1, # include reference base 
-		#																													'maxpos'        => $bp2_pos	);
-	
-	
-		my $sv = Sanger::CGP::VagrentSV::Data::StructuralVariation->new('lhb' => $lhb, 'rhb' => $rhb,  'info' => { ('name'  => $name,
+	 
+	  
+	 my $sv = Sanger::CGP::VagrentSV::Data::StructuralVariation->new('lhb' => $lhb, 'rhb' => $rhb,  'info' => { ('name'  	=> $name,
 																																																							'length'  => $length,
 																																																							'svtype'  => $svtype,
-																																																							'locflag' => $chr_flag)} );
+																																																							'locflag' => $chr_flag,
+																																																							 )} );
+																																																							 
+		my($lhbPromoterGenes,$rhbPromoterGenes)=$promoter->getRegulatoryAnnotations($sv);																																																					 
+		my($lhbEnhancerGenes,$rhbEnhancerGenes)=$enhancer->getRegulatoryAnnotations($sv);																																																						 
+		my ($lhb_genes,$spanned_genes,$rhb_genes)=$bptr->getOverlappingGenes($sv);
+		#my $bp_genes = Sanger::CGP::VagrentSV::Results::TranscriptResults->new(%$bp_genes);
 		
-																															
-		my $bpa = Sanger::CGP::VagrentSV::Annotators::SVAnnotator->new(transcriptSource => $ts);
-		
-		my @res = $bpa->getSVAnnotations($sv);
-		
-			#Sanger::CGP::VagrentSV::Annotators::AnnotateBreakpoint->new($lhb,$ts,$annotator);
-			#my($lhb_genes,$lhbtr)=_getSvFeatures($ts->getTranscripts($lhb));
-			# SV region 
-		#}
-		
-		#		print Dumper($lhb);
-		#		my @junk = $annotator->getAnnotation($lhb);
-		#		print Dumper(\@junk);
-		
-			
-		# a straight insertion
-  
-		#my($sv_data)=$sv->getDisruptedGenes($ts,$fai,$chr_lengths);
-		
-		#print Dumper $sv_data;
-
-		#if($sv_data->getFusedGenes) {
-		#	print "Fused genes present\n";
-		#}
-		#else {
-	#		print "No fused genes found\n";
-		#}
+		my ($ltr,$rtr) = $bpa->getBreakpointTranscripts($sv,$bptr);	
+		my ($fused_transcripts)	= $fga->getFusedTranscripts($ltr,$rtr,$sv);
+					
+		foreach my $ft (@$fused_transcripts) {
+			if($ft){
+				print $outfile $_."\t".$ft."\t".$lhb_genes.'/'.$rhb_genes."\t".$spanned_genes."\t".
+				$lhbPromoterGenes->{'lgenes'}.'/'.$lhbPromoterGenes->{'rgenes'}."\t".$rhbPromoterGenes->{'lgenes'}.'/'.$rhbPromoterGenes->{'rgenes'}."\t".
+				$lhbEnhancerGenes->{'lgenes'}.'/'.$lhbEnhancerGenes->{'rgenes'}."\t".$rhbEnhancerGenes->{'lgenes'}.'/'.$rhbEnhancerGenes->{'rgenes'}."\n";
 				
-		#exit;
-		#exit;
-		#$sv->getLHS->getMaxpos
-		
-		my $var=Sanger::CGP::Vagrent::Data::Substitution->new('species'				=> $opts->{'species'},
-																															'genomeVersion' => $opts->{'assembly'},
-																															'chr'	          => $bp1_chr,
-																															'minpos'        => $bp1_pos -1, # include reference base 
-																															'maxpos'        => $bp1_pos,
-																															'strand'				=> $bp1_strand,
-																																);
-		#print Dumper $lhb;
-
-		#my @groups=annotate($annotator,$var);
-		#print Dumper  @groups;
-		#exit;
-		
+				# output in defuse format as required by pegasus
+				
+			
+			}
+	  }
+				
+		 print "Annotated brekpoint: $counter\n"; 
 		#$self->_writeBedpe($_,$sv_data);
 	}
-
   
-  close($rfh);
+  close($rfh,$outfile);
 }
 
 
@@ -274,36 +270,6 @@ sub _get_genome_object {
 }
 
 
-
-
-sub annotate {
-  my ($annotator,$var) = @_;
-  my @annotationGroups;
-  try {
-    @annotationGroups = $annotator->getAnnotation($var);
-  } catch {
-      warn "caught error: $_\n"; # not $@
-  };  
-  return @annotationGroups;
-}
-
-
-
-sub _getSvFeatures {
-	my (@tr)=@_;
-	my ($tr_list,$gene_list);
-	foreach my $line (@tr) {
-		if($line->getAccession) {
-			$tr_list->{$line->getAccession}++;
-			$gene_list->{$line->getGeneName}++;
-	  }		
-	}
-	return ($gene_list,$tr_list);
-}
-
-
-
-
 sub get_annotator {
 	my $options = shift;
 
@@ -321,7 +287,6 @@ sub get_annotator {
 	
 	return $annotator;
 }
-
 
 
 sub get_annotator_complete {
@@ -343,7 +308,6 @@ sub get_annotator_complete {
 
 	return $annotator;
 }
-
 
 
 sub _writeBedpe {

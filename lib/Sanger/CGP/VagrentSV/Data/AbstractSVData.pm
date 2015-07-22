@@ -1,4 +1,4 @@
-package Sanger::CGP::VagrentSV::Annotators::AbstractSVAnnotator;
+package Sanger::CGP::VagrentSV::Data::AbstractAnnotationSource;
 																					 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
@@ -52,27 +52,15 @@ sub _init {
 	my $self = shift;
 	my %vars = @_;
 	foreach my $k(keys(%vars)){
-		if($k eq 'transcriptSource' && $vars{'transcriptSource'}->isa('Sanger::CGP::Vagrent::TranscriptSource::AbstractTranscriptSource')){
-			$self->{'_transcriptSource'} = $vars{'transcriptSource'};
+		if($k eq 'annotationSource')){
+			$self->{'_annotationSource'} = $vars{'annotationSource'};
 		} elsif($k eq 'debug' && $vars{'debug'}){
 			$self->{'_debug'} = 1;
 		}
 	}
-	$self->{_subannot} = Sanger::CGP::Vagrent::Annotators::InsertionAnnotator->new(transcriptSource => $self->{'_transcriptSource'});
 }
-
 
 sub _localInit: Abstract;
-
-sub getSVannotator {
-	return shift->{_subannot};
-}
-
-sub getSeq {
-	my($self,$seq,$start,$stop)=@_;
-	#print Dumper "$start--$stop";		
-	return substr($seq, $start - 1, $stop);
-}
 
 sub addMessage {
 	my ($self,$msg) = @_;
@@ -97,16 +85,6 @@ sub getMessages {
 sub _clearMessages {
 	shift->{_msg} = undef;
 }
-
-
-sub _arrayHasString {
-	my ($self,$val,@arr) = @_;
-	foreach my $a (@arr){
-		return 1 if $a eq $val;
-	}
-	return 0;
-}
-
 
 
 __END__

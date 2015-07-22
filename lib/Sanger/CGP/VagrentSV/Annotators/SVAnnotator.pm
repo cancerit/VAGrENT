@@ -2,80 +2,60 @@ package Sanger::CGP::VagrentSV::Annotators::SVAnnotator;
 
 use strict;
 use Data::Dumper;
+
 use Const::Fast qw(const);
 use Try::Tiny qw(try catch);
 
+use Bio::Seq;
+use Bio::SeqUtils;
+
 use Sanger::CGP::Vagrent qw($VERSION);
 use Sanger::CGP::VagrentSV::SVConstants;
-use Sanger::CGP::VagrentSV::Data::SVData;
-
+use Sanger::CGP::Vagrent::Data::Insertion;
+use Sanger::CGP::VagrentSV::Results::TranscriptResults;
 use base qw(Sanger::CGP::VagrentSV::Annotators::AbstractSVAnnotator);
 
 1;
 
 
-sub _myinit {
+sub _localInit {
 	my $self = shift;
-	$self->{'reserved'}='reserved';
+	#$self->{'reserved'}='reserved';
 }
 
 
-sub getSVAnnotations{
-	my($self,$sv)=@_;
-	#get transcripts overlapping SV regions
-	my @tr= $self->{'_transcriptSource'}->getTranscripts($sv->getLhb);
-	foreach my $t(@tr){
-		my $res = $self->_generateResults($sv->getLhb,$t);
-		#push @results, $res if defined $res;
+sub getBreakpointTranscripts {
+	my($self,$sv,$bptr)=@_;
+		my $ltr=$self->_getTranscriptData($bptr,$sv->getLhb);
+		my $rtr=$self->_getTranscriptData($bptr,$sv->getRhb);	
+	return($ltr,$rtr);
+}
+
+sub _getTranscriptData {
+	my($self,$bptr,$bp)=@_;
+	my $results;
+	my $tmp_ins=$self->_getInsertionObject($bp);
+	foreach my $t ($self->{'_transcriptSource'}->getTranscripts($bp)) {
+		my $bptrData = $bptr->getTranscriptAnnotation($t,$bp->getMaxPos,$tmp_ins);
+		my $res = Sanger::CGP::VagrentSV::Results::TranscriptResults->new(%$bptrData);
+		push(@$results,$res);
 	}
-
-	#my($bp_genes,$bp_tr)=_getSvFeatures($bp,\@tr,$annotator);
-	#print Dumper $bp_genes;
-	#return $sv_data;
+	return $results;
 }
 
-=head1
-
-sub _getSvFeatures {
-	my ($self,$bp,$tr)=@_;
-	my ($tr_list,$gene_list);
-	foreach my $tr (@$tr) {
-		try {
-   my $g=$self->{_subannot}->getTranscriptAnnotation($bp,$tr);
-  } catch {
-  		warn join "\n", $self->{_subannot}->getMessages;
-      warn "caught error: $_\n"; # not $@
-  }; 				
-		
-		exit;
-		if($tr->getAccession) {
-			$tr_list->{$tr->getAccession}++;
-			$gene_list->{$tr->getGeneName}++;
-	  }		
-	}
-	return ($gene_list,$tr_list);
-}
-=cut
-
-sub _generateResults {
-	my($self,$bp,$t)=@_;
-	my $g=$self->getSVannotator->getTranscriptAnnotation($bp,$t);
-	
-	print Dumper $g;
+sub _getInsertionObject {
+		my ($self,$bp)=@_;
+    my $var = Sanger::CGP::Vagrent::Data::Insertion->new(
+							'species'				=> $bp->getSpecies,
+							'genomeVersion' => $bp->getGenomeVersion,
+							'chr'	          => $bp->getChr,
+							'minpos'        => $bp->getMinPos,
+							'maxpos'        => $bp->getMinPos + 1,
+							'insseq'        => 'A'); # as alt always includes the reference base prior to the change
+ 	
+	return $var;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 

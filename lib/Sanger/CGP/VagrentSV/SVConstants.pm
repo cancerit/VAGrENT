@@ -14,8 +14,8 @@ use FindBin qw($Bin);
 ####
 const our $PADDING_BUFFER_TR => 0;
 const our $PADDING_BUFFER_SEQ => 1000;
-
-
+const our $PROMOTER_SEARCH_PADDING => 500000;
+const our $ENHANCER_SEARCH_PADDING => 500000;
 
 
 1;

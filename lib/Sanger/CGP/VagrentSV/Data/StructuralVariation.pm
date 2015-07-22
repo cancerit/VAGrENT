@@ -32,96 +32,29 @@ sub isValid {
 }
 
 
-
-
-sub getDisruptedGenes{
-	my($self,$ts,$fai,$chr_length)=@_;
-	my ($fusedtr,$fused_genes);
-	my $ext_maxpos=  $self->getInb->getMaxPos + $Sanger::CGP::VagrentSV::SVConstants::PADDING_BUFFER_SEQ;
-	my $ext_minpos=  $self->getInb->getMinPos - $Sanger::CGP::VagrentSV::SVConstants::PADDING_BUFFER_SEQ;
-  
-  #print Dumper $self->getLhb;
-  #print Dumper $ts->getTranscripts($self->getLhb);
-  #print Dumper $ts->getTranscripts($self->getRhb);
-  #next;
-	#get transcripts overlapping SV regions
-	my($lhb_genes,$lhbtr)=_getSvFeatures($ts->getTranscripts($self->getLhb));
-	my($rhb_genes,$rhbtr)=_getSvFeatures($ts->getTranscripts($self->getRhb));
-		
-	my($inb_genes,$inbtr)=_getSvFeatures($ts->getTranscripts($self->getInb));
-	
-	my($delseq)=_getSeq($fai,$self->getInb->getChr,$self->getInb->getMinPos,$self->getInb->getMaxPos);
-	
-	# check if $EXTENSION_BUFFER exceeds chromosome length
-	if($chr_length->{$self->getInb->getChr} < $ext_maxpos ) {
-		$ext_maxpos= $self->getInb->getMaxPos;
-	}
-	if( $ext_minpos < 0  ) {
-		$ext_minpos= $self->getInb->getMinPos;
-	}
-		
-	my($rhb_insseq)=_getSeq($fai,$self->getInb->getChr,$self->getInb->getMaxPos,$ext_maxpos);
-	my($lhb_insseq)=_getSeq($fai,$self->getInb->getChr,$ext_minpos,$self->getInb->getMinPos );
-
-	#get transcripts/genes exclusively within breakpoint
-	$inbtr=_getUniqueFeatures($rhbtr,$inbtr);
-	$inbtr=_getUniqueFeatures($lhbtr,$inbtr);
-	
-	$inb_genes=_getUniqueFeatures($rhb_genes,$inb_genes);
-	$inb_genes=_getUniqueFeatures($lhb_genes,$inb_genes);
-
-	
-	if($lhbtr && $rhbtr) {
-		$fusedtr={%$lhbtr,%$rhbtr};
-		$fused_genes={%$lhb_genes,%$rhb_genes};
-	}
-	elsif($lhbtr) {
-		$fusedtr=$lhbtr;
-		$fused_genes=$lhb_genes;
-	}
-	elsif($rhbtr) {
-		$fusedtr=$rhbtr;
-		$fused_genes=$rhb_genes;
-	}
-	
-	my ($sv_data)=Sanger::CGP::VagrentSV::Data::SVData->new('fusedtr' 		=>$fusedtr, 
-								'fusedgenes'	=>$fused_genes,
-								'lhbgenes'		=> $lhb_genes,
-								'rhbgenes'		=> $rhb_genes,
-								'inbtr'				=>$inbtr,
-								'inbgenes' 		=>$inb_genes,
-								#'inb_delseq' 	=>$delseq,
-								'lhb_insseq' 	=>$lhb_insseq,
-								'rhb_insseq' 	=>$rhb_insseq,
-								'lhb_trobj' 	=>$ts->getTranscripts($self->getLhb),
-								'rhb_trobj' 	=>$ts->getTranscripts($self->getRhb)     
-								);		
-		
-	return $sv_data;
+sub getSvType {
+	return shift->{_info}{svtype};
 }
 
-
-sub _getSvFeatures {
-	my (@tr)=@_;
-	my ($tr_list,$gene_list);
-	foreach my $line (@tr) {
-		if($line->getAccession) {
-			$tr_list->{$line->getAccession}++;
-			$gene_list->{$line->getGeneName}++;
-	  }		
-	}
-	return ($gene_list,$tr_list);
+sub getSvName {
+	return shift->{_info}{name};
 }
 
-sub _getUniqueFeatures {
-	my ($break,$inbreak)=@_;
-	foreach my $key(keys %$break) {
-		if($inbreak->{$key}) {
-			delete $inbreak->{$key};
-		}
-	}
-	return $inbreak;
+sub getLocFlag {
+	return shift->{_info}{locflag};
 }
+
+sub getLhb {
+	return shift->{_lhb};
+}
+sub getRhb {
+	return shift->{_rhb};
+}
+
+sub getInfo {
+	return shift->{_info};
+}
+
 
 
 =head2  getSeq

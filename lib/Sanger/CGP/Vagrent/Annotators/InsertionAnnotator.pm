@@ -91,7 +91,7 @@ sub _getTranscriptAnnotation {
 		unless($g) {
 			return undef;
 		}
-		return ([$g]);
+		return $g;
 }
 
 

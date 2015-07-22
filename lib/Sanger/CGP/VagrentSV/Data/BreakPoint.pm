@@ -20,6 +20,18 @@ sub _init {
 	}
 }
 
+sub setInsSeq {
+	my ($self,$seq) = @_;
+	if(defined $seq){
+		$self->{_insseq} = $seq;
+	}
+}
+
+sub getInsSeq {
+	return shift->{_insseq};
+}
+
+
 
 sub isValid {
 	my $self = shift;
