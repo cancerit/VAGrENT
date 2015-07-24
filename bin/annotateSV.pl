@@ -100,6 +100,7 @@ sub option_builder {
     'p|process=n' => \$opts{'process'},
     'sp|species=s' => \$opts{'species'},
     'as|assembly=s' => \$opts{'assembly'},
+    'peg|pegasus=s' => \$opts{'pegasus'},
     'g|genome=s' => \$opts{'genome'},
   );
 

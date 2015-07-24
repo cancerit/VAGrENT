@@ -75,16 +75,24 @@ use Sanger::CGP::VagrentSV::Annotators::BreakPointTranscripts;
 use Sanger::CGP::VagrentSV::Annotators::FusionGeneAnnotator;
 use Sanger::CGP::VagrentSV::Results::TranscriptResults;
 use Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource;
-
+use Sanger::CGP::VagrentSV::IO::OutputFormatter;
 
 const my $REPRE_BM => Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker->new();
 const my $WORST_BM => Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker->new();
+			
+const my $left 	=> "0\t"x 22;
+const my $right => "\t0"x 25;
 
 my @header=qw/chr lStart lEnd chr rStart rEnd name score lStrand rStrand microHomoLen cancer_type patientId sampleId
  lExon\/rExon lTranscript\/rTranscript lGeneStrand\/rGeneStrand 
  lAnnotation\/rAnnotation lGene\/rGene SpannedGenes
  lPromoterL\/lPromoterR rPromoterL\/rPromoterR 
  lEnhancerL\/lEnhancerR rEnhancerL\/rEnhancerR/; 
+
+my @defuse_header=qw/gene1 gene2 gene_align_strand1 gene_align_strand2 gene_chr1 gene_chr2 gene_end1 gene_end2 
+	gene_location1 gene_location2 gene_name1 gene_name2 gene_start1 gene_start2 gene_strand1 gene_strand2 
+ 	gene_brek_seq break_pos1 break_pos2/;
+ 
 
 
 sub new {
@@ -118,10 +126,14 @@ sub _read_sv_annotation {
 	my ($self,$opts)=@_;
 	my ($genome)= Sanger::CGP::VagrentSV::Data::GenomeSeq->new( 'fasta' => $opts->{'genome'}, 'index' => $opts->{'genome'}.'.fai' );
 	my($outfile)=Sanger::CGP::VagrentSV::Base->open_to_write($opts->{'input'}.'.outttt');
+	my($defuse_out)=Sanger::CGP::VagrentSV::Base->open_to_write($opts->{'input'}.'.defuse');
 	my($rfh)=Sanger::CGP::VagrentSV::Base->open_to_read($opts->{'input'});
 	#my ($fai)=$self->_get_genome_object($opts->{'genome'});
 	#my ($chr_lengths)=$self->_get_chromosome_length($opts->{'genome'}.'.fai');
 	my ($annotator)=get_annotator($opts);	
+	
+	# output formatter...
+	my $formatter=Sanger::CGP::VagrentSV::IO::OutputFormatter->new();
 	# get chache
 	my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => $opts->{'cache'}, 'search_pad' => $Sanger::CGP::VagrentSV::SVConstants::PADDING_BUFFER_TR );
 	my $bpa = Sanger::CGP::VagrentSV::Annotators::SVAnnotator->new(transcriptSource => $ts);
@@ -150,7 +162,7 @@ sub _read_sv_annotation {
 		} 
 		my ($svtype)=(split ":",$name)[2]; 
 
-		next if $svtype ne 'del';
+		#next if $svtype ne 'del';
 		
 		# left hand break point
 	
@@ -185,6 +197,15 @@ sub _read_sv_annotation {
 		#my $bp_genes = Sanger::CGP::VagrentSV::Results::TranscriptResults->new(%$bp_genes);
 		
 		my ($ltr,$rtr) = $bpa->getBreakpointTranscripts($sv,$bptr);	
+		
+		
+		if($opts->{'pegasus'}) {
+			my($pegasusInputFormat)=$formatter->getPegasusInputFormat($ltr,$rtr,$sv);
+			foreach my $line (@$pegasusInputFormat) {
+				print $defuse_out $left.$line.$right."\n";
+			}
+		}
+		
 		my ($fused_transcripts)	= $fga->getFusedTranscripts($ltr,$rtr,$sv);
 					
 		foreach my $ft (@$fused_transcripts) {
@@ -192,12 +213,12 @@ sub _read_sv_annotation {
 				print $outfile $_."\t".$ft."\t".$lhb_genes.'/'.$rhb_genes."\t".$spanned_genes."\t".
 				$lhbPromoterGenes->{'lgenes'}.'/'.$lhbPromoterGenes->{'rgenes'}."\t".$rhbPromoterGenes->{'lgenes'}.'/'.$rhbPromoterGenes->{'rgenes'}."\t".
 				$lhbEnhancerGenes->{'lgenes'}.'/'.$lhbEnhancerGenes->{'rgenes'}."\t".$rhbEnhancerGenes->{'lgenes'}.'/'.$rhbEnhancerGenes->{'rgenes'}."\n";
-				
 				# output in defuse format as required by pegasus
-				
-			
 			}
 	  }
+		
+		
+		
 				
 		 print "Annotated brekpoint: $counter\n"; 
 		#$self->_writeBedpe($_,$sv_data);

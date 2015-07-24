@@ -198,7 +198,7 @@ sub _stringifyAnnotation {
 	#my $cds = $anno->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getCDSAnnotationContext);
 	#my $prot = $anno->getAnnotationByContext(Sanger::CGP::Vagrent::Data::Annotation::getProteinAnnotationContext);
 my $desc;
-	$desc = $anno->getLabel.'|';
+	#$desc = $anno->getLabel.'|';
 =head
 	if(defined($anno->getCCDS) && $anno->getCCDS ne ''){
 		$desc .= $anno->getCCDS.'|';

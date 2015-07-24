@@ -100,7 +100,6 @@ return ($fusionData);
 
 }
 
-
 sub getLminPos {
 	shift->{_lmin};
 }
