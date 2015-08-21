@@ -288,7 +288,7 @@ sub parse_vcf_record {
   # a straight deletion
   if($ref_len > 1 && $alt_len == 1) {
     my $min = $pos + 1; # as vcf records base before for non-insert
-    my $max = $min + ($vcf->get_info_field($record->[$INFO_COL], 'LEN') - 1);
+    my $max = $min + ($ref_len - 2); # ref_len contains both the start base and the extra anchor base, have to deduct 2
     $var = Sanger::CGP::Vagrent::Data::Deletion->new(
 							'species'				=> $opts->{'species'},
 							'genomeVersion' => $opts->{'assembly'},
@@ -321,7 +321,7 @@ sub parse_vcf_record {
   # complex indel
   elsif($ref_len > 1 && $alt_len > 1) {
     my $min = $pos + 1; # as vcf records base before for non-insert
-    my $max = $min + ($vcf->get_info_field($record->[$INFO_COL], 'LEN') - 1);
+    my $max = $min + ($ref_len - 2); # ref_len contains both the start base and the extra anchor base, have to deduct 2
     $var = Sanger::CGP::Vagrent::Data::ComplexIndel->new(
 							'species'				=> $opts->{'species'},
 							'genomeVersion' => $opts->{'assembly'},
