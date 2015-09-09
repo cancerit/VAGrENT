@@ -125,7 +125,7 @@ score[7]    strand_1[8] strand2[9] MicroHLen[10] CancerType[11]    Patient_ID[12
 sub _read_sv_annotation {
 	my ($self,$opts)=@_;
 	my ($genome)= Sanger::CGP::VagrentSV::Data::GenomeSeq->new( 'fasta' => $opts->{'genome'}, 'index' => $opts->{'genome'}.'.fai' );
-	my($outfile)=Sanger::CGP::VagrentSV::Base->open_to_write($opts->{'input'}.'.outttt');
+	my($outfile)=Sanger::CGP::VagrentSV::Base->open_to_write($opts->{'input'}.'.out');
 	my($defuse_out)=Sanger::CGP::VagrentSV::Base->open_to_write($opts->{'input'}.'.defuse');
 	my($rfh)=Sanger::CGP::VagrentSV::Base->open_to_read($opts->{'input'});
 	#my ($fai)=$self->_get_genome_object($opts->{'genome'});
@@ -191,15 +191,15 @@ sub _read_sv_annotation {
 																																																							'locflag' => $chr_flag,
 																																																							 )} );
 																																																							 
-		my($lhbPromoterGenes,$rhbPromoterGenes)=$promoter->getRegulatoryAnnotations($sv);																																																					 
-		my($lhbEnhancerGenes,$rhbEnhancerGenes)=$enhancer->getRegulatoryAnnotations($sv);																																																						 
+		#my($lhbPromoterGenes,$rhbPromoterGenes)=$promoter->getRegulatoryAnnotations($sv);																																																					 
+		#my($lhbEnhancerGenes,$rhbEnhancerGenes)=$enhancer->getRegulatoryAnnotations($sv);																																																						 
 		my ($lhb_genes,$spanned_genes,$rhb_genes)=$bptr->getOverlappingGenes($sv);
 		#my $bp_genes = Sanger::CGP::VagrentSV::Results::TranscriptResults->new(%$bp_genes);
 		
 		my ($ltr,$rtr) = $bpa->getBreakpointTranscripts($sv,$bptr);	
 		
 		
-		if($opts->{'pegasus'}) {
+		if(defined $opts->{'pegasus'}) {
 			my($pegasusInputFormat)=$formatter->getPegasusInputFormat($ltr,$rtr,$sv);
 			foreach my $line (@$pegasusInputFormat) {
 				print $defuse_out $left.$line.$right."\n";
@@ -210,9 +210,10 @@ sub _read_sv_annotation {
 					
 		foreach my $ft (@$fused_transcripts) {
 			if($ft){
-				print $outfile $_."\t".$ft."\t".$lhb_genes.'/'.$rhb_genes."\t".$spanned_genes."\t".
-				$lhbPromoterGenes->{'lgenes'}.'/'.$lhbPromoterGenes->{'rgenes'}."\t".$rhbPromoterGenes->{'lgenes'}.'/'.$rhbPromoterGenes->{'rgenes'}."\t".
-				$lhbEnhancerGenes->{'lgenes'}.'/'.$lhbEnhancerGenes->{'rgenes'}."\t".$rhbEnhancerGenes->{'lgenes'}.'/'.$rhbEnhancerGenes->{'rgenes'}."\n";
+				print $outfile $_."\t".$ft."\t".$lhb_genes.'/'.$rhb_genes."\n";
+				#.$spanned_genes."\n".
+				#$lhbPromoterGenes->{'lgenes'}.'/'.$lhbPromoterGenes->{'rgenes'}."\t".$rhbPromoterGenes->{'lgenes'}.'/'.$rhbPromoterGenes->{'rgenes'}."\t".
+				#$lhbEnhancerGenes->{'lgenes'}.'/'.$lhbEnhancerGenes->{'rgenes'}."\t".$rhbEnhancerGenes->{'lgenes'}.'/'.$rhbEnhancerGenes->{'rgenes'}."\n";
 				# output in defuse format as required by pegasus
 			}
 	  }

@@ -78,7 +78,7 @@ sub getFusedTranscripts {
 	}
 	elsif($ltr && ($sv->getSvType eq 'bt' || $sv->getSvType eq 'del'|| $sv->getSvType eq 'td')){
 		foreach my $l(@$ltr){
-			push(@$fusionData, $l->getLExonNum."\t".
+			push(@$fusionData, $l->getLExonNum."/NA\t".
 														$l->getTranscript->getAccession."\t".
 														$l->getTranscript->getStrand."\t".
 														$l->getAnno);	
@@ -86,7 +86,7 @@ sub getFusedTranscripts {
 	}
 	elsif($rtr && ($sv->getSvType eq 'bt' || $sv->getSvType eq 'del'|| $sv->getSvType eq 'td')){
 		foreach my $r(@$rtr){
-			push(@$fusionData, $r->getRExonNum."\t".
+			push(@$fusionData, "NA/".$r->getRExonNum."\t".
 														$r->getTranscript->getAccession."\t".
 														$r->getTranscript->getStrand."\t".
 														$r->getAnno);	
