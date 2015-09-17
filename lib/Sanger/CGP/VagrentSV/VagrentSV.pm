@@ -139,20 +139,22 @@ sub _read_sv_annotation {
 	my $bpa = Sanger::CGP::VagrentSV::Annotators::SVAnnotator->new(transcriptSource => $ts);
 	my $bptr = Sanger::CGP::VagrentSV::Annotators::BreakPointTranscripts->new(transcriptSource => $ts);
 	my $fga = Sanger::CGP::VagrentSV::Annotators::FusionGeneAnnotator->new(transcriptSource => $ts);
-	my $promoter = Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource->new(annotationSource => '/nfs/users/nfs_s/sb43/scratch_tmp_storage_not_backed_up/vagrentSV_data/refdata/genome_features/gc19.flat.prom_per_gene.pc.bed');
-	my $enhancer = Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource->new(annotationSource => '/nfs/users/nfs_s/sb43/scratch_tmp_storage_not_backed_up/vagrentSV_data/refdata/genome_features/roadmap_stringent_enhancers_with_Ensembl_ID_and_name.bed.txt');
+	my $promoter = Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource->new(annotationSource => '/nfs/users/nfs_s/sb43/sb43_scratch116/vagrentSV_data/refdata/genome_features/gc19.flat.prom_per_gene.pc.bed');
+	my $enhancer = Sanger::CGP::VagrentSV::Data::FileBasedAnnotationSource->new(annotationSource => '/nfs/users/nfs_s/sb43/sb43_scratch116/vagrentSV_data/refdata/genome_features/roadmap_stringent_enhancers_with_Ensembl_ID_and_name.bed.txt');
 	
 	
 	my $counter;
 	
-	print $outfile join("\t", @header)."\n";
+	print $outfile '#'.join("\t", @header)."\n";
 	
 	while(<$rfh>) {
 		my ($chr_flag,$lparams,$lparams,$offset);
 		$counter ++;
 		chomp;
+			
 		my($bp1_chr,$bp1_pos,$bp2_chr,$bp2_pos,$name,$bp1_strand,$bp2_strand,$length)=(split "\t", $_ )[0,2,3,5,6,8,9,10];
 		#check if SV is on same chromosome
+		
 		if(	$bp1_chr eq $bp2_chr) { $chr_flag=1; }
 		if ($counter < 10 && $bp1_chr && $bp1_pos && $bp2_chr && $bp2_pos && $name && $bp1_strand && $bp2_strand ) {
 				$log->debug("$counter : Format is BEDPE");
