@@ -55,7 +55,7 @@ def createAnnotationMap(out_dir, annotation_bed, index_file,annotation_class):
 			_getGeneFusion(chr,start,end,strand,gene,fh_bed_reset,fh_out)
 			
 			#Chromothripsis...
-			_getChromothripsis(chr,start,end,strand,gene,fh_out,dict_chrLen[fields[0]])
+			#_getChromothripsis(chr,start,end,strand,gene,fh_out,dict_chrLen[fields[0]])
 			
 			
 			# set file handler back to start
@@ -114,8 +114,9 @@ def _getGeneFusion(chrL,startL,endL,strandL,geneL,fh_bed_reset,fh_out):
 			if strandL == strandH:
 				svclass_counter+=1
 				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'GF',svclass_counter,chrH),'.',strandL,strandH,'GF',geneL,geneH))
-	return 0
-	
+		elif chrL!=chrH:
+			return
+			
 def _getEnhancerApposiotionToGenes(chrL,startL,endL,strandL,geneL,fh_bed_reset,fh_out):
 	global svclass_counter
 	flag=0
@@ -133,7 +134,9 @@ def _getEnhancerApposiotionToGenes(chrL,startL,endL,strandL,geneL,fh_bed_reset,f
 			else:
 				flag=1
 				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.','.',strandH,'EA',geneL,geneH))
-	return 0
+	  	#return if done with the underlyig chromosome
+		elif chrL!=chrH:
+			return
 
 def _getGeneApposiotionToEnhancers(chrL,startL,endL,strandL,geneL,fh_bed_reset,fh_out):
 	global svclass_counter
@@ -151,7 +154,9 @@ def _getGeneApposiotionToEnhancers(chrL,startL,endL,strandL,geneL,fh_bed_reset,f
 			else:
 				flag=1
 				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.',strandL,'.','EA',geneL,'.'))
-	return 0
+		#return if done with the underlyig chromosome
+		elif chrL!=chrH:
+			return
 
 def _getChromothripsis(chr,start,end,strand,gene,fh_out,chrLen):
 	global svclass_counter
