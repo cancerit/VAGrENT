@@ -14,19 +14,20 @@ Make sure input file is sorted in chr coordinate order
 
 BEDPE_LINE='{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n'
 ID_FORMAT='{}:{}:{}:{}'
-
-
+svclass_counter=0
+annotationClass=['deletion','duplication','chromothripsis']
 
 def createAnnotationMap(out_dir, annotation_bed, index_file,annotation_class):
 	print "Dir:%s,Bed:%s,index:%s,ann_class:%s" %(out_dir,annotation_bed,index_file,annotation_class)
 	#get chr length
+	global svclass_counter;chr_tmp=0
 	dict_chrLen = _getChrLen(index_file)
 	fh_bed = open(annotation_bed, 'r')
 	# create another file handler to seek data
 	fh_bed_reset = open(annotation_bed, 'r')
 	fh_out = open('annotation_map.bed', 'w')
-	fh_out.write(BEDPE_LINE.format('chrL','startL','endL','chrH','startH','endH','id','score','strandL','strandH','Type','featureL','featureH'))
-	svclass_counter=0
+	fh_out.write(BEDPE_LINE.format('#chrL','startL','endL','chrH','startH','endH','id','score','strandL','strandH','Type','featureL','featureH'))
+	
 	while 1:
 		line=fh_bed.readline()
 		if not line:
@@ -35,31 +36,40 @@ def createAnnotationMap(out_dir, annotation_bed, index_file,annotation_class):
 		#21	10156200	10906200	-g1	.	-	ID=ENSG00000166157.12;gene_id=ENSG00000166157.12;transcript_id=ENSG00000166157.12;gene_type=protein_coding;gene_status=KNOWN;gene_name=TPTE;transcript_type=protein_coding;transcript_status=KNOWN;transcript_name=TPTE;level=2;havana_gene=OTTHUMG00000074127.5
 		#get fields to variables
 		chr=fields[0]; start=fields[1]; end=fields[2]; strand=fields[5]
+		if chr_tmp!=chr:
+		#reset counter to zero for every chromosome
+			chr_tmp=chr;svclass_counter=0
 		#seek file handler to current bed file location
 		fh_bed_reset.seek(fh_bed.tell())
 		#match only with genes
 		if re.match('^g',fields[3]):
 			svclass_counter+=1
 			gene=re.split(';|=',fields[6])[1]
+			#deletion...
 			(chrL,startL,endL,chrH,startH,endH)=_getCopyLoss(chr,start,end,dict_chrLen[fields[0]])
 			fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'CL',svclass_counter,chrH),'.',strand,strand,'CL',gene,gene))
 			(chrL,startL,endL,chrH,startH,endH)=_getInternalDel(chr,start,end)
 			fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'ID',svclass_counter,chrH),'.',strand,strand,'ID',gene,gene))
 			(chrL,startL,endL,chrH,startH,endH)=_get5pOverhang(chr,start,end,strand,dict_chrLen[fields[0]])
 			fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'OH',svclass_counter,chrH),'.',strand,strand,'OH',gene,gene))
-			svclass_counter=_getGeneFusion(chr,start,end,strand,gene,svclass_counter,fh_bed_reset,fh_out)
+			_getGeneFusion(chr,start,end,strand,gene,fh_bed_reset,fh_out)
+			
+			#Chromothripsis...
+			_getChromothripsis(chr,start,end,strand,gene,fh_out,dict_chrLen[fields[0]])
+			
+			
 			# set file handler back to start
 			fh_bed_reset.seek(0)
-		#enhancer apposition : pair downstream coordinates(+e) of enhancer with +ve strand genes upstream coordinates(-g) 
+		#enhancer apposition : pair downstream coordinates(+e) of enhancer with upstream coordinates of gene(-g) 
 		if re.match('^\+e',fields[3]):
 			fh_bed_reset.seek(fh_bed.tell())
-			svclass_counter=_getEnhancerApposiotionToGenes(chr,start,end,strand,'.',svclass_counter,fh_bed_reset,fh_out)
+			_getEnhancerApposiotionToGenes(chr,start,end,strand,'.',fh_bed_reset,fh_out)
 			fh_bed_reset.seek(0)
-		#pair  downstream cooridnates(+g) of -ve strand gene with enhancers upstream coordinates(-e) 
-		if (re.match('^\+g',fields[3]) and strand == '-'):
+		#pair downstream cooridnates of gene with upstream coordinates(-e) of enhancers 
+		if re.match('^\+g',fields[3]):
 			gene=re.split(';|=',fields[6])[1]
 			fh_bed_reset.seek(fh_bed.tell())
-			svclass_counter=_getGeneApposiotionToEnhancers(chr,start,end,strand,gene,svclass_counter,fh_bed_reset,fh_out)
+			_getGeneApposiotionToEnhancers(chr,start,end,strand,gene,fh_bed_reset,fh_out)
 			fh_bed_reset.seek(0)
 		# set file handler back to start				
 		fh_bed_reset.seek(0)	
@@ -84,7 +94,7 @@ def _getCopyLoss(chr,start,strand,chrLen):
 		return (chr,'0',end,chr,(int(end)-1),chrLen)
 	else:
 		return (chr,'0',(int(start)+1),chr,start,chrLen)
-	
+
 def _getInternalDel(chr,start,end):
 	return (chr,start,end,chr,start,end)
 	
@@ -94,7 +104,8 @@ def _get5pOverhang(chr,start,end,strand,chrLen):
 	else:
 		return (chr,start,end,chr,end,chrLen)			
 		
-def _getGeneFusion(chrL,startL,endL,strandL,geneL,svclass_counter,fh_bed_reset,fh_out):
+def _getGeneFusion(chrL,startL,endL,strandL,geneL,fh_bed_reset,fh_out):
+	global svclass_counter
 	for line in fh_bed_reset:
 		fields = line.split("\t")
 		chrH=fields[0];
@@ -103,26 +114,59 @@ def _getGeneFusion(chrL,startL,endL,strandL,geneL,svclass_counter,fh_bed_reset,f
 			if strandL == strandH:
 				svclass_counter+=1
 				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'GF',svclass_counter,chrH),'.',strandL,strandH,'GF',geneL,geneH))
-	return svclass_counter
+	return 0
 	
-def _getEnhancerApposiotionToGenes(chrL,startL,endL,strandL,geneL,svclass_counter,fh_bed_reset,fh_out):
+def _getEnhancerApposiotionToGenes(chrL,startL,endL,strandL,geneL,fh_bed_reset,fh_out):
+	global svclass_counter
+	flag=0
 	for line in fh_bed_reset:
 		fields = line.split("\t")
 		chrH=fields[0];startH=fields[1]; endH=fields[2];strandH=fields[5]; 
-		if(re.match('^\-g',fields[3]) and chrL == chrH and strandH == '+' ):
+		if(re.match('^\-g',fields[3]) and chrL == chrH ):
 			geneH=re.split(';|=',fields[6])[1]
 			svclass_counter+=1
-			fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.','.',strandH,'EA',geneL,geneH))
-	return svclass_counter
+			if flag:
+				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.','.',strandH,'EA',geneL,geneH))
+			elif((int(startH) - int(endL)) < 0):
+				flag=0
+				fh_out.write(BEDPE_LINE.format(chrL,startL,endH,chrH,startL,endH,ID_FORMAT.format(chrL,'EO',svclass_counter,chrH),'.','.',strandH,'EO',geneL,geneH))
+			else:
+				flag=1
+				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.','.',strandH,'EA',geneL,geneH))
+	return 0
 
-def _getGeneApposiotionToEnhancers(chrL,startL,endL,strandL,geneL,svclass_counter,fh_bed_reset,fh_out):
+def _getGeneApposiotionToEnhancers(chrL,startL,endL,strandL,geneL,fh_bed_reset,fh_out):
+	global svclass_counter
+	flag=0
 	for line in fh_bed_reset:
 		fields = line.split("\t")
 		chrH=fields[0];startH=fields[1]; endH=fields[2]
 		if(re.match('^\-e',fields[3]) and chrL == chrH):
 			svclass_counter+=1
-			fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.',strandL,'.','EA',geneL,'.'))
-	return svclass_counter
+			if flag:
+				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.',strandL,'.','EA',geneL,'.'))
+			elif((int(startH) - int(endL)) < 0):
+				flag=0
+				fh_out.write(BEDPE_LINE.format(chrL,startL,endH,chrH,startL,endH,ID_FORMAT.format(chrL,'EO',svclass_counter,chrH),'.',strandL,'.','EO',geneL,'.'))
+			else:
+				flag=1
+				fh_out.write(BEDPE_LINE.format(chrL,startL,endL,chrH,startH,endH,ID_FORMAT.format(chrL,'EA',svclass_counter,chrH),'.',strandL,'.','EA',geneL,'.'))
+	return 0
+
+def _getChromothripsis(chr,start,end,strand,gene,fh_out,chrLen):
+	global svclass_counter
+	sv_class='CT'
+	#Lchromo
+	svclass_counter+=1
+	fh_out.write(BEDPE_LINE.format(chr,'0',start,chr,start,end,ID_FORMAT.format(chr,sv_class,svclass_counter,chr),'.',strand,strand,sv_class,gene,gene))
+	#Mchromo
+	svclass_counter+=1
+	fh_out.write(BEDPE_LINE.format(chr,start,end,chr,start,end,ID_FORMAT.format(chr,sv_class,svclass_counter,chr),'.',strand,strand,sv_class,gene,gene))
+	#Rchromo
+	svclass_counter+=1
+	fh_out.write(BEDPE_LINE.format(chr,start,end,chr,end,chrLen,ID_FORMAT.format(chr,sv_class,svclass_counter,chr),'.',strand,strand,sv_class,gene,gene))
+	return 0
+
 	
 #####################################################################################################################
 ## -- FUNCTION MAIN: 
