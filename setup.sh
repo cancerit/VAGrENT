@@ -82,10 +82,8 @@ cd $INIT_DIR
 
 # make sure that build is self contained
 unset PERL5LIB
-ARCHNAME=`perl -e 'use Config; print $Config{archname};'`
 PERLROOT=$INST_PATH/lib/perl5
-PERLARCH=$PERLROOT/$ARCHNAME
-export PERL5LIB="$PERLROOT:$PERLARCH"
+export PERL5LIB="$PERLROOT"
 
 # log information about this system
 (
@@ -127,18 +125,18 @@ if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
   echo -n " previously installed ..."
 else
   (
-    set -ex
+    set -x
     get_distro $CURR_TOOL $CURR_SOURCE
-    cd $SETUP_DIR/$CURR_TOOL
-    make -j$CPU
-    cp tabix $INST_PATH/bin/.
-    cp bgzip $INST_PATH/bin/.
-    cd perl
-    patch Makefile.PL < $INIT_DIR/patches/tabixPerlLinker.diff
-    perl Makefile.PL INSTALL_BASE=$INST_PATH
-    make
-    make test
-    make install
+    cd $SETUP_DIR/$CURR_TOOL && \
+    make -j$CPU && \
+    cp tabix $INST_PATH/bin/. && \
+    cp bgzip $INST_PATH/bin/. && \
+    cd perl && \
+    patch Makefile.PL < $INIT_DIR/patches/tabixPerlLinker.diff && \
+    perl Makefile.PL INSTALL_BASE=$INST_PATH && \
+    make && \
+    make test && \
+    make install && \
     touch $SETUP_DIR/$CURR_TOOL.success
   ) >>$INIT_DIR/setup.log 2>&1
 fi
@@ -153,12 +151,12 @@ if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
   echo -n " previously installed ..."
 else
   (
-    set -ex
+    set -x
     get_distro $CURR_TOOL $CURR_SOURCE
-    cd $SETUP_DIR/$CURR_TOOL
-    patch Makefile < $INIT_DIR/patches/vcfToolsInstLocs.diff
-    patch perl/Vcf.pm < $INIT_DIR/patches/vcfToolsProcessLog.diff
-    make -j$CPU PREFIX=$INST_PATH
+    cd $SETUP_DIR/$CURR_TOOL && \
+    patch Makefile < $INIT_DIR/patches/vcfToolsInstLocs.diff && \
+    patch perl/Vcf.pm < $INIT_DIR/patches/vcfToolsProcessLog.diff && \
+    make -j$CPU PREFIX=$INST_PATH && \
     touch $SETUP_DIR/$CURR_TOOL.success
   ) >>$INIT_DIR/setup.log 2>&1
 fi
@@ -177,7 +175,7 @@ else
     get_distro "samtools" $SOURCE_SAMTOOLS
     perl -i -pe 's/^CFLAGS=\s*/CFLAGS=-fPIC / unless /\b-fPIC\b/' samtools/Makefile
   fi
-  make -C samtools -j$CPU
+  make -C samtools -j$CPU && \
   touch $SETUP_DIR/samtools.success
   )>>$INIT_DIR/setup.log 2>&1
 fi
@@ -204,11 +202,10 @@ done_message "" "Failed during installation of core dependencies."
 
 echo -n "Installing vagrent ..."
 (
-  set -e
-  cd $INIT_DIR
-  perl Makefile.PL INSTALL_BASE=$INST_PATH
-  make
-  make test
+  cd $INIT_DIR && \
+  perl Makefile.PL INSTALL_BASE=$INST_PATH && \
+  make && \
+  make test && \
   make install
 ) >>$INIT_DIR/setup.log 2>&1
 done_message "" "vagrent install failed."
@@ -216,13 +213,10 @@ done_message "" "vagrent install failed."
 # cleanup all junk
 rm -rf $SETUP_DIR
 
-
-
 echo
 echo
 echo "Please add the following to beginning of path:"
 echo "  $INST_PATH/bin"
 echo "Please add the following to beginning of PERL5LIB:"
 echo "  $PERLROOT"
-echo "  $PERLARCH"
 echo

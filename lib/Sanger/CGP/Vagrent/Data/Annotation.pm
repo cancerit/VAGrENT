@@ -2,21 +2,21 @@ package Sanger::CGP::Vagrent::Data::Annotation;
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -26,38 +26,39 @@ use strict;
 use Data::Dumper;
 use List::Util qw(first);
 use Carp;
+use Const::Fast qw(const);
 
 use Sanger::CGP::Vagrent qw($VERSION);
 use base qw(Sanger::CGP::Vagrent);
 
-1;
-
 # sequence context constant values
 
-use constant CDS_ANNOTATION_CONTEXT => 'CDS';
-use constant MRNA_ANNOTATION_CONTEXT => 'mRNA';
-use constant PROTEIN_ANNOTATION_CONTEXT => 'Protein';
+const my $CDS_ANNOTATION_CONTEXT => 'CDS';
+const my $MRNA_ANNOTATION_CONTEXT => 'mRNA';
+const my $PROTEIN_ANNOTATION_CONTEXT => 'Protein';
 
-use constant ALL_ANNOTATION_CONTEXT => (CDS_ANNOTATION_CONTEXT,MRNA_ANNOTATION_CONTEXT,PROTEIN_ANNOTATION_CONTEXT);
+const my @ALL_ANNOTATION_CONTEXT => ($CDS_ANNOTATION_CONTEXT,$MRNA_ANNOTATION_CONTEXT,$PROTEIN_ANNOTATION_CONTEXT);
 
 # variation type constant values
 
-use constant SUBSTITUTION_ANNOTATION_TYPE => 'Substitution';
-use constant DELETION_ANNOTATION_TYPE => 'Deletion';
-use constant INSERTION_ANNOTATION_TYPE => 'Insertion';
-use constant COMPLEX_ANNOTATION_TYPE => 'Complex';
-use constant FRAMESHIFT_ANNOTATION_TYPE => 'FrameShift';
-use constant UNKNOWN_ANNOTATION_TYPE => 'Unknown';
+const my $SUBSTITUTION_ANNOTATION_TYPE => 'Substitution';
+const my $DELETION_ANNOTATION_TYPE => 'Deletion';
+const my $INSERTION_ANNOTATION_TYPE => 'Insertion';
+const my $COMPLEX_ANNOTATION_TYPE => 'Complex';
+const my $FRAMESHIFT_ANNOTATION_TYPE => 'FrameShift';
+const my $UNKNOWN_ANNOTATION_TYPE => 'Unknown';
 
-use constant ALL_ANNOTATION_TYPES => (COMPLEX_ANNOTATION_TYPE,FRAMESHIFT_ANNOTATION_TYPE,INSERTION_ANNOTATION_TYPE,DELETION_ANNOTATION_TYPE,SUBSTITUTION_ANNOTATION_TYPE,UNKNOWN_ANNOTATION_TYPE);
+const my @ALL_ANNOTATION_TYPES => ($COMPLEX_ANNOTATION_TYPE,$FRAMESHIFT_ANNOTATION_TYPE,$INSERTION_ANNOTATION_TYPE,$DELETION_ANNOTATION_TYPE,$SUBSTITUTION_ANNOTATION_TYPE,$UNKNOWN_ANNOTATION_TYPE);
 
 # variation subtype constant values for location data description
 
-use constant POSITION_KNOWN_SUBTYPE => 'POS-KNOWN';
-use constant POSITION_OFFSET_SUBTYPE => 'POS-OFFSET';
-use constant POSITION_OFF_SEQUENCE_SUBTYPE => 'POS-OFFSEQ';
+const my $POSITION_KNOWN_SUBTYPE => 'POS-KNOWN';
+const my $POSITION_OFFSET_SUBTYPE => 'POS-OFFSET';
+const my $POSITION_OFF_SEQUENCE_SUBTYPE => 'POS-OFFSEQ';
 
-use constant ALL_ANNOTATION_SUBTYPES => (POSITION_OFF_SEQUENCE_SUBTYPE,POSITION_OFFSET_SUBTYPE,POSITION_KNOWN_SUBTYPE);
+const my @ALL_ANNOTATION_SUBTYPES => ($POSITION_OFF_SEQUENCE_SUBTYPE,$POSITION_OFFSET_SUBTYPE,$POSITION_KNOWN_SUBTYPE);
+
+1;
 
 sub new {
   my $proto = shift;
@@ -98,7 +99,7 @@ sub _init {
 			$self->{_description} = $vars{description};
 		} elsif($k eq 'context'){
 			my $good = undef;
-			foreach my $context(Sanger::CGP::Vagrent::Data::Annotation::ALL_ANNOTATION_CONTEXT){
+			foreach my $context(@ALL_ANNOTATION_CONTEXT){
 				if($vars{context} eq $context){
 					$good = $vars{context};
 					last;
@@ -111,7 +112,7 @@ sub _init {
 			}
 		} elsif($k eq 'type'){
 			my $good = undef;
-			foreach my $type(Sanger::CGP::Vagrent::Data::Annotation::ALL_ANNOTATION_TYPES){
+			foreach my $type(@ALL_ANNOTATION_TYPES){
 				if($vars{type} eq $type){
 					$good = $vars{type};
 					last;
@@ -124,7 +125,7 @@ sub _init {
 			}
 		} elsif($k eq 'subtype'){
 			my $good = undef;
-			foreach my $subtype(Sanger::CGP::Vagrent::Data::Annotation::ALL_ANNOTATION_SUBTYPES){
+			foreach my $subtype(@ALL_ANNOTATION_SUBTYPES){
 				if($vars{subtype} eq $subtype){
 					$good = $vars{subtype};
 					last;
@@ -141,51 +142,51 @@ sub _init {
 }
 
 sub getCDSAnnotationContext {
-	return CDS_ANNOTATION_CONTEXT;
+	return $CDS_ANNOTATION_CONTEXT;
 }
 
 sub getmRNAAnnotationContext {
-	return MRNA_ANNOTATION_CONTEXT;
+	return $MRNA_ANNOTATION_CONTEXT;
 }
 
 sub getProteinAnnotationContext {
-	return PROTEIN_ANNOTATION_CONTEXT;
+	return $PROTEIN_ANNOTATION_CONTEXT;
 }
 
 sub getSubstitutionAnnotationType {
-	return SUBSTITUTION_ANNOTATION_TYPE;
+	return $SUBSTITUTION_ANNOTATION_TYPE;
 }
 
 sub getDeletionAnnotationType {
-	return DELETION_ANNOTATION_TYPE;
+	return $DELETION_ANNOTATION_TYPE;
 }
 
 sub getComplexAnnotationType {
-	return COMPLEX_ANNOTATION_TYPE;
+	return $COMPLEX_ANNOTATION_TYPE;
 }
 
 sub getInsertionAnnotationType {
-	return INSERTION_ANNOTATION_TYPE;
+	return $INSERTION_ANNOTATION_TYPE;
 }
 
 sub getFrameShiftAnnotationType {
-	return FRAMESHIFT_ANNOTATION_TYPE;
+	return $FRAMESHIFT_ANNOTATION_TYPE;
 }
 
 sub getUnknownAnnotationType {
-	return UNKNOWN_ANNOTATION_TYPE;
+	return $UNKNOWN_ANNOTATION_TYPE;
 }
 
 sub getPositionKnownSubtype {
-	return POSITION_KNOWN_SUBTYPE;
+	return $POSITION_KNOWN_SUBTYPE;
 }
 
 sub getPositionOffsetSubtype {
-	return POSITION_OFFSET_SUBTYPE;
+	return $POSITION_OFFSET_SUBTYPE;
 }
 
 sub getPositionOffSequenceSubtype {
-	return POSITION_OFF_SEQUENCE_SUBTYPE;
+	return $POSITION_OFF_SEQUENCE_SUBTYPE;
 }
 
 sub getMinPos {
