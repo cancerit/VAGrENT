@@ -2,21 +2,21 @@ package Sanger::CGP::Vagrent::Data::Transcript;
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -27,19 +27,20 @@ use Carp;
 use Data::Dumper;
 use Sanger::CGP::Vagrent qw($VERSION);
 use Sort::Key qw(nkeysort);
+use Const::Fast qw(const);
 
 use base qw(Sanger::CGP::Vagrent);
 
+const my $PROTEIN_CODING_TYPE => 'ProteinCoding';
+const my $MIRCO_RNA_TYPE => 'miRNA';
+const my $LINC_RNA_TYPE => 'lincRNA';
+const my $SNO_RNA_TYPE => 'snoRNA';
+const my $SN_RNA_TYPE => 'snRNA';
+const my $R_RNA_TYPE => 'rRNA';
+
+const my @ALL_GENE_TYPES => ($PROTEIN_CODING_TYPE,$MIRCO_RNA_TYPE,$LINC_RNA_TYPE,$SNO_RNA_TYPE,$SN_RNA_TYPE,$R_RNA_TYPE);
+
 1;
-
-use constant PROTEIN_CODING_TYPE => 'ProteinCoding';
-use constant MIRCO_RNA_TYPE => 'miRNA';
-use constant LINC_RNA_TYPE => 'lincRNA';
-use constant SNO_RNA_TYPE => 'snoRNA';
-use constant SN_RNA_TYPE => 'snRNA';
-use constant R_RNA_TYPE => 'rRNA';
-
-use constant ALL_GENE_TYPES => (PROTEIN_CODING_TYPE,MIRCO_RNA_TYPE,LINC_RNA_TYPE,SNO_RNA_TYPE,SN_RNA_TYPE,R_RNA_TYPE);
 
 sub new {
   my $proto = shift;
@@ -89,7 +90,7 @@ sub _init {
 		} elsif($k eq 'genetype'){
 			$self->{_genetype} = $vars{genetype};
 			my $good = undef;
-			foreach my $type(Sanger::CGP::Vagrent::Data::Transcript::ALL_GENE_TYPES){
+			foreach my $type(@ALL_GENE_TYPES){
 				if($vars{genetype} eq $type){
 					$good = $vars{genetype};
 					last;
@@ -102,6 +103,10 @@ sub _init {
 			}
 		}
 	}
+}
+
+sub getAllGeneTypes {
+  return @ALL_GENE_TYPES;
 }
 
 sub getGeneType {
@@ -205,7 +210,7 @@ sub getGenomicMaxPos {
 }
 
 sub isProteinCoding {
-	if(shift->getGeneType eq PROTEIN_CODING_TYPE){
+	if(shift->getGeneType eq $PROTEIN_CODING_TYPE){
 		return 1;
 	} else {
 		return 0;
@@ -213,27 +218,27 @@ sub isProteinCoding {
 }
 
 sub getProteinCodingType {
-	return PROTEIN_CODING_TYPE;
+	return $PROTEIN_CODING_TYPE;
 }
 
 sub getMicroRnaType {
-	return MIRCO_RNA_TYPE;
+	return $MIRCO_RNA_TYPE;
 }
 
 sub getLincRnaType {
-	return LINC_RNA_TYPE;
+	return $LINC_RNA_TYPE;
 }
 
 sub getSnoRnaType {
-	return SNO_RNA_TYPE;
+	return $SNO_RNA_TYPE;
 }
 
 sub getSnRnaType {
-	return SN_RNA_TYPE;
+	return $SN_RNA_TYPE;
 }
 
 sub getRRnaType {
-	return R_RNA_TYPE;
+	return $R_RNA_TYPE;
 }
 
 __END__

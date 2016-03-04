@@ -2,21 +2,21 @@ package Sanger::CGP::Vagrent::GenomicRegionDumper::SubstitutionGenomicRegionDump
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -182,7 +182,7 @@ sub _convertExonToAnnotatableCodingExonicRegions {
 }
 
 sub _getLowestContinuousAcceptorEssentialSpliceSiteOffset {
-	my @offsets = sort {$b <=> $a} Sanger::CGP::Vagrent::Annotators::AbstractAnnotator::CONSENSUS_SPLICE_OFFSETS;
+	my @offsets = sort {$b <=> $a} Sanger::CGP::Vagrent::Annotators::AbstractAnnotator->getConsensusSpliceOffsets;
 	my $out = 0;
 	foreach my $o(@offsets){
 		next if $o > 0;
@@ -196,7 +196,7 @@ sub _getLowestContinuousAcceptorEssentialSpliceSiteOffset {
 }
 
 sub _getHighestContinuousDonorEssentialSpliceSiteOffset {
-	my @offsets = sort {$a <=> $b} Sanger::CGP::Vagrent::Annotators::AbstractAnnotator::CONSENSUS_SPLICE_OFFSETS;
+	my @offsets = sort {$a <=> $b} Sanger::CGP::Vagrent::Annotators::AbstractAnnotator->getConsensusSpliceOffsets;
 	my $out = 0;
 	foreach my $o(@offsets){
 		next if $o < 0;
@@ -210,7 +210,7 @@ sub _getHighestContinuousDonorEssentialSpliceSiteOffset {
 }
 
 sub _getIsolatedDonorEssentialSpliceSiteOffset {
-	my ($out) = sort {$b <=> $a} Sanger::CGP::Vagrent::Annotators::AbstractAnnotator::CONSENSUS_SPLICE_OFFSETS;
+	my ($out) = sort {$b <=> $a} Sanger::CGP::Vagrent::Annotators::AbstractAnnotator->getConsensusSpliceOffsets;
 	return $out;
 }
 
