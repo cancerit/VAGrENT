@@ -2,21 +2,21 @@ package Sanger::CGP::Vagrent::Annotators::AbstractAnnotator;
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -28,6 +28,7 @@ use Log::Log4perl;
 use POSIX qw(ceil);
 use Data::Dumper;
 use Attribute::Abstract;
+use Const::Fast qw(const);
 
 use Sanger::CGP::Vagrent qw($VERSION);
 
@@ -38,20 +39,19 @@ use base qw(Sanger::CGP::Vagrent::Ontology::SequenceOntologyClassifier);
 
 my $log = Log::Log4perl->get_logger(__PACKAGE__);
 
-
-1;
-
 # constant reference values for consensus splice site values.
-use constant CONSENSUS_SPLICE_OFFSETS => (-2, -1, 1, 2, 5);
-use constant CONSENSUS_SPLICE_BEFORE_BOUNDRY => -2;
-use constant CONSENSUS_SPLICE_AFTER_BOUNDRY => 5;
+const my @CONSENSUS_SPLICE_OFFSETS => (-2, -1, 1, 2, 5);
+const my $CONSENSUS_SPLICE_BEFORE_BOUNDRY => -2;
+const my $CONSENSUS_SPLICE_AFTER_BOUNDRY => 5;
 
 # constant value representing the cutoff for intronic calls
-use constant INTRONIC_OFFSET_CUTOFF => 11;
+const my $INTRONIC_OFFSET_CUTOFF => 11;
 
-use constant UPDOWNSTREAM_5KB_CUTOFF => 5000;
-use constant UPSTREAM_2KB_CUTOFF => -2000;
-use constant DOWNSTREAM_500BP_CUTOFF => 500;
+const my $UPDOWNSTREAM_5KB_CUTOFF => 5000;
+const my $UPSTREAM_2KB_CUTOFF => -2000;
+const my $DOWNSTREAM_500BP_CUTOFF => 500;
+
+1;
 
 sub new {
   my $proto = shift;
@@ -61,6 +61,10 @@ sub new {
 	$self->_init(@_);
   $self->_ontologyInit(@_);
 	return $self;
+}
+
+sub getConsensusSpliceOffsets {
+  return @CONSENSUS_SPLICE_OFFSETS;
 }
 
 sub getAnnotation {
@@ -462,7 +466,7 @@ sub _buildProteinAnnotation {
  		# something has gone wrong
  		return undef;
  	}
-  
+
 	my $mtDna = $self->_getMutatedCdsSequence($wtDna,$cdsMinPos,$cdsMaxPos,$cAnnot->getMt());
 	my $mtProt = Bio::Seq->new(-seq => $prePad . $mtDna . $postPad)->translate->seq(); # mutant protein sequence
 	my $maxMtProt = Bio::Seq->new(-seq => $prePad . $mtDna . substr($tran->getcDNASeq,$tran->getCdsMaxPos()))->translate->seq(); # maximised protein sequence, overruns the natural stop and translates to the end of the transcript
@@ -513,7 +517,7 @@ sub _buildProteinAnnotation {
 			substr($wt,-1,1,'');
 			substr($mt,-1,1,'');
 		}
-    
+
 		#warn "|$wt| to |$mt|\n";
 		if($wt ne ''){
 			# wild type residue has been changed
@@ -843,7 +847,7 @@ sub _buildUnknownMRNAAnnotation {
 
 sub _isOffsetAConsensusSpliceDistance {
 	my ($self,$offset) = @_;
-  foreach my $cf($self->CONSENSUS_SPLICE_OFFSETS){
+  foreach my $cf(@CONSENSUS_SPLICE_OFFSETS){
   	if($offset == $cf){
   		return 1;
   	}
@@ -852,16 +856,16 @@ sub _isOffsetAConsensusSpliceDistance {
 }
 
 sub _getConsesnsusSpliceBeforeBoundry {
-	return CONSENSUS_SPLICE_BEFORE_BOUNDRY;
+	return $CONSENSUS_SPLICE_BEFORE_BOUNDRY;
 }
 
 sub _getConsesnsusSpliceAfterBoundry {
-	return CONSENSUS_SPLICE_AFTER_BOUNDRY;
+	return $CONSENSUS_SPLICE_AFTER_BOUNDRY;
 }
 
 sub _isIntronicOffsetDistance {
 	my ($self,$offset) = @_;
-	if(abs($offset) >= $self->INTRONIC_OFFSET_CUTOFF){
+	if(abs($offset) >= $INTRONIC_OFFSET_CUTOFF){
 		return 1;
 	}
 	return 0;
@@ -869,7 +873,7 @@ sub _isIntronicOffsetDistance {
 
 sub _isWithin5KBOffsetDistance {
 	my ($self,$offset) = @_;
-	if(abs($offset) <= $self->UPDOWNSTREAM_5KB_CUTOFF){
+	if(abs($offset) <= $UPDOWNSTREAM_5KB_CUTOFF){
 		return 1;
 	}
 	return 0;
@@ -877,7 +881,7 @@ sub _isWithin5KBOffsetDistance {
 
 sub _isWithin2KBUpstreamOffsetDistance {
 	my ($self,$offset) = @_;
-	if($offset < 0 && $offset >= $self->UPSTREAM_2KB_CUTOFF){
+	if($offset < 0 && $offset >= $UPSTREAM_2KB_CUTOFF){
 		return 1;
 	}
 	return 0;
@@ -885,7 +889,7 @@ sub _isWithin2KBUpstreamOffsetDistance {
 
 sub _isWithin500BPDownstreamOffsetDistance {
 	my ($self,$offset) = @_;
-	if($offset > 0 && $offset <= $self->DOWNSTREAM_500BP_CUTOFF){
+	if($offset > 0 && $offset <= $DOWNSTREAM_500BP_CUTOFF){
 		return 1;
 	}
 	return 0;
@@ -897,7 +901,7 @@ sub _coversStartCodon {
 		# if the transcript isn't protein coding it can't have a start codon
 		return 0;
 	}
-  
+
   my ($startMin,$startMax);
   if($anno->getContext eq Sanger::CGP::Vagrent::Data::Annotation::getmRNAAnnotationContext()){
     $startMin = $tran->getCdsMinPos;
@@ -909,7 +913,7 @@ sub _coversStartCodon {
     # don't know, assume no
 		return 0;
   }
-  
+
   if($anno->hasClassification($self->getInsertionClass)){
     # insertions are a special case, coordinates are outside the variant
     if($anno->getMinPos < $startMax && $anno->getMaxPos > $startMin){
@@ -944,7 +948,7 @@ sub _coversStopCodon {
     # don't know, assume no
 		return 0;
   }
-  
+
   if($anno->hasClassification($self->getInsertionClass)){
     # insertions are a special case, coordinates are outside the variant
     if($anno->getMinPos < $stopMax && $anno->getMaxPos > $stopMin){
@@ -1010,10 +1014,10 @@ sub _canAnnotateToCDS {
 		if($anno->hasClassification($self->getInsertionClass)){
 			# insertions are a special case.
 			# Coordinates are the last WT positions, and not the first variant ones like everything else
-      
+
       print 'ANNO POS: '.$anno->getMinPos.' , '.$anno->getMinOffset.' - '.$anno->getMaxPos.' , '.$anno->getMaxOffset."\n" if $self->_debug();
       print 'CDS POS: '.$tran->getCdsMinPos.' , '.$tran->getCdsMaxPos."\n" if $self->_debug();
-      
+
       if($anno->getMaxPos < $tran->getCdsMinPos || $anno->getMinPos > $tran->getCdsMaxPos){
         # ends before CDS or starts afterwards
         return 0;
@@ -1051,7 +1055,7 @@ sub _canAnnotateToCDS {
 		} elsif($anno->hasClassification($self->getUnknownVariantClass)){
 			return 0;
     } elsif($anno->hasClassification($self->getInsertionClass) && $anno->hasClassification($self->get5PrimeUtrVariantClass)){
-      # odd case, insertions close to the start codons can be described on the CDS even though they don't change it. 
+      # odd case, insertions close to the start codons can be described on the CDS even though they don't change it.
       return 1;
 		} else {
 			my $msg = "Unable to calculate CDS relevance - UNKNOWN CLASSIFICATION: ".join(' ',$anno->getClassifications);
