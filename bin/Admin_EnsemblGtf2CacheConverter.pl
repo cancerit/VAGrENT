@@ -38,7 +38,7 @@ use Data::Dumper;
 use File::Type;
 use Const::Fast qw(const);
 
-use Bio::DB::Sam;
+use Bio::DB::HTS;
 
 use Sanger::CGP::Vagrent::Data::Transcript;
 use Sanger::CGP::Vagrent::Data::Exon;
@@ -68,7 +68,7 @@ try {
 sub convertGtf {
   my ($opts,$lookup,$ccds) = @_;
   my $type = getInputFileType($opts->{'g'});
-	my $fasta = Bio::DB::Sam::Fai->load($opts->{'f'});
+	my $fasta = Bio::DB::HTS::Fai->load($opts->{'f'});
 	my ($inFh,$outFh);
 	if($type eq 'text') {
 		open $inFh, '<'.$opts->{'g'} || croak("unable to open gtf input file:".$opts->{'g'});
