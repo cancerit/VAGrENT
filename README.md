@@ -15,7 +15,7 @@ as well as Sequence Ontology terms to classify its consequences.
 Some of the code included in this package has dependencies on several packages:
 
  * [Samtools v1.3+](https://github.com/samtools/samtools)
- * [vcftools](http://vcftools.sourceforge.net/)
+ * [vcftools](https://vcftools.github.io/)
  * [Bio::DB::HTS](http://search.cpan.org/~rishidev/Bio-DB-HTS/)
 
 And various perl modules.
