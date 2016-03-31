@@ -1,7 +1,7 @@
 package Sanger::CGP::Vagrent;
 
 ##########LICENCE##########
-# Copyright (c) 2014 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
 #
@@ -26,7 +26,7 @@ use strict;
 use Const::Fast qw(const);
 
 use base 'Exporter';
-our $VERSION = '2.1.3';
+our $VERSION = '3.0.0';
 our @EXPORT = qw($VERSION);
 
 1;
