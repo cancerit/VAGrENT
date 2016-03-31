@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##########LICENCE##########
-# Copyright (c) 2014 Genome Research Ltd.
+# Copyright (c) 2014-2016 Genome Research Ltd.
 #
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
 #
@@ -22,9 +22,9 @@
 ##########LICENCE##########
 
 
-SOURCE_SAMTOOLS="https://github.com/samtools/samtools/archive/0.1.20.tar.gz"
-SOURCE_TABIX="http://sourceforge.net/projects/samtools/files/tabix/tabix-0.2.6.tar.bz2/download"
-SOURCE_VCFTOOLS="http://sourceforge.net/projects/vcftools/files/vcftools_0.1.12a.tar.gz/download"
+SOURCE_SAMTOOLS="https://github.com/samtools/samtools/releases/download/1.3/samtools-1.3.tar.bz2"
+BIODBHTS_INSTALL="https://raw.githubusercontent.com/Ensembl/Bio-HTS/master/INSTALL.pl"
+SOURCE_VCFTOOLS="https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz"
 
 done_message () {
     if [ $? -eq 0 ]; then
@@ -41,24 +41,34 @@ done_message () {
 
 get_distro () {
   EXT=""
-  DECOMP="gunzip -f"
+  DECOMP=""
   if [[ $2 == *.tar.bz2* ]] ; then
     EXT="tar.bz2"
-    DECOMP="bzip2 -fd"
+    DECOMP="-j"
   elif [[ $2 == *.tar.gz* ]] ; then
     EXT="tar.gz"
+    DECOMP="-z"
   else
     echo "I don't understand the file type for $1"
     exit 1
   fi
+
   if hash curl 2>/dev/null; then
     curl -sS -o $1.$EXT -L $2
   else
     wget -nv -O $1.$EXT $2
   fi
   mkdir -p $1
-  `$DECOMP $1.$EXT`
-  tar --strip-components 1 -C $1 -xf $1.tar
+  tar --strip-components 1 -C $1 $DECOMP -xf $1.$EXT
+}
+
+get_file () {
+# output, source
+  if hash curl 2>/dev/null; then
+    curl -sS -o $1 -L $2
+  else
+    wget -nv -O $1 $2
+  fi
 }
 
 if [ "$#" -ne "1" ] ; then
@@ -74,17 +84,6 @@ INST_PATH=$1
 # get current directory
 INIT_DIR=`pwd`
 
-# cleanup inst_path
-mkdir -p $INST_PATH/bin
-cd $INST_PATH
-INST_PATH=`pwd`
-cd $INIT_DIR
-
-# make sure that build is self contained
-unset PERL5LIB
-PERLROOT=$INST_PATH/lib/perl5
-export PERL5LIB="$PERLROOT"
-
 # log information about this system
 (
     echo '============== System information ===='
@@ -98,19 +97,26 @@ export PERL5LIB="$PERLROOT"
     echo
 ) >>$INIT_DIR/setup.log 2>&1
 
-perlmods=( "File::ShareDir" "File::ShareDir::Install" )
-
 set -e
-for i in "${perlmods[@]}" ; do
-  echo -n "Installing build prerequisite $i..."
-  (
-    set -x
-    $INIT_DIR/bin/cpanm -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
-    set +x
-    echo; echo
-  ) >>$INIT_DIR/setup.log 2>&1
-  done_message "" "Failed during installation of $i."
-done
+
+# cleanup inst_path
+mkdir -p $INST_PATH/bin
+cd $INST_PATH
+INST_PATH=`pwd`
+cd $INIT_DIR
+
+# make sure that build is self contained
+unset PERL5LIB
+PERLROOT=$INST_PATH/lib/perl5
+
+# allows user to knowingly specify other PERL5LIB areas.
+if [ -z ${CGP_PERLLIBS+x} ]; then
+  export PERL5LIB="$PERLROOT"
+else
+  export PERL5LIB="$PERLROOT:$CGP_PERLLIBS"
+fi
+
+export PATH=$INST_PATH/bin:$PATH
 
 #create a location to build dependencies
 SETUP_DIR=$INIT_DIR/install_tmp
@@ -118,31 +124,19 @@ mkdir -p $SETUP_DIR
 
 cd $SETUP_DIR
 
-CURR_TOOL="tabix"
-CURR_SOURCE=$SOURCE_TABIX
-echo -n "Building $CURR_TOOL ..."
-if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
-  echo -n " previously installed ..."
-else
-  (
-    set -x
-    get_distro $CURR_TOOL $CURR_SOURCE
-    cd $SETUP_DIR/$CURR_TOOL && \
-    make -j$CPU && \
-    cp tabix $INST_PATH/bin/. && \
-    cp bgzip $INST_PATH/bin/. && \
-    cd perl && \
-    patch Makefile.PL < $INIT_DIR/patches/tabixPerlLinker.diff && \
-    perl Makefile.PL INSTALL_BASE=$INST_PATH && \
-    make && \
-    make test && \
-    make install && \
-    touch $SETUP_DIR/$CURR_TOOL.success
-  ) >>$INIT_DIR/setup.log 2>&1
-fi
-done_message "" "Failed to build $CURR_TOOL."
+## grab cpanm and stick in workspace, then do a self upgrade into bin:
+get_file $SETUP_DIR/cpanm https://cpanmin.us/
+perl $SETUP_DIR/cpanm -l $INST_PATH App::cpanminus
+CPANM=`which cpanm`
+echo $CPANM
 
-cd $SETUP_DIR
+perlmods=( "File::ShareDir" "File::ShareDir::Install" )
+
+for i in "${perlmods[@]}" ; do
+  echo -n "Installing build prerequisite $i..."
+  $CPANM -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
+  done_message "" "Failed during installation of $i."
+done
 
 CURR_TOOL="vcftools"
 CURR_SOURCE=$SOURCE_VCFTOOLS
@@ -150,64 +144,59 @@ echo -n "Building $CURR_TOOL ..."
 if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
   echo -n " previously installed ..."
 else
-  (
-    set -x
-    get_distro $CURR_TOOL $CURR_SOURCE
-    cd $SETUP_DIR/$CURR_TOOL && \
-    patch Makefile < $INIT_DIR/patches/vcfToolsInstLocs.diff && \
-    patch perl/Vcf.pm < $INIT_DIR/patches/vcfToolsProcessLog.diff && \
-    make -j$CPU PREFIX=$INST_PATH && \
-    touch $SETUP_DIR/$CURR_TOOL.success
-  ) >>$INIT_DIR/setup.log 2>&1
+  get_distro $CURR_TOOL $CURR_SOURCE
+  cd $SETUP_DIR/$CURR_TOOL && \
+  patch src/perl/Vcf.pm < $INIT_DIR/patches/vcfToolsProcessLog.diff && \
+  ./configure --prefix=$INST_PATH --with-pmdir=$INST_PATH/lib/perl5 && \
+  make -j$CPU && \
+  make install && \
+  touch $SETUP_DIR/$CURR_TOOL.success
 fi
 done_message "" "Failed to build $CURR_TOOL."
 
-# need to build samtools as has to be compiled in correct way for perl bindings
-# does not deploy binary in this form
 echo -n "Building samtools ..."
-if [ -e $SETUP_DIR/samtools.success ]; then
+if [ -e "$SETUP_DIR/samtools.success" ]; then
   echo -n " previously installed ...";
 else
-  cd $SETUP_DIR
-  (
-  set -x
-  if [ ! -e samtools ]; then
-    get_distro "samtools" $SOURCE_SAMTOOLS
-    perl -i -pe 's/^CFLAGS=\s*/CFLAGS=-fPIC / unless /\b-fPIC\b/' samtools/Makefile
-  fi
-  make -C samtools -j$CPU && \
+  cd $SETUP_DIR &&
+  get_distro "samtools" $SOURCE_SAMTOOLS &&
+  cd samtools &&
+  ./configure --enable-plugins --enable-libcurl --prefix=$INST_PATH &&
+  make all all-htslib &&
+  make install install-htslib &&
   touch $SETUP_DIR/samtools.success
-  )>>$INIT_DIR/setup.log 2>&1
 fi
 done_message "" "Failed to build samtools."
 
-export SAMTOOLS="$SETUP_DIR/samtools"
-
-#add bin path for PCAP install tests
-export PATH="$INST_PATH/bin:$PATH"
+echo -n "Building Bio::DB::HTS ..."
+if [ -e $SETUP_DIR/biohts.success ]; then
+  echo -n " previously installed ...";
+else
+  cd $SETUP_DIR &&
+  $CPANM --mirror http://cpan.metacpan.org --notest -l $INST_PATH Module::Build Bio::Root::Version &&
+  # now Bio::DB::HTS
+  get_file "INSTALL.pl" $BIODBHTS_INSTALL &&
+  perl -I $PERL5LIB INSTALL.pl --prefix $INST_PATH --static &&
+  rm -f BioDbHTS_INSTALL.pl &&
+  touch $SETUP_DIR/biohts.success
+fi
 
 cd $INIT_DIR
 
 echo -n "Installing Perl prerequisites ..."
 if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
-    echo
     echo "WARNING: Your Perl installation does not seem to include a complete set of core modules.  Attempting to cope with this, but if installation fails please make sure that at least ExtUtils::MakeMaker is installed.  For most users, the best way to do this is to use your system's package manager: apt, yum, fink, homebrew, or similar."
 fi
-(
-  set -x
-  perl $INIT_DIR/bin/cpanm -v --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
-  set +x
-) >>$INIT_DIR/setup.log 2>&1
+
+$CPANM --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
 done_message "" "Failed during installation of core dependencies."
 
 echo -n "Installing vagrent ..."
-(
-  cd $INIT_DIR && \
-  perl Makefile.PL INSTALL_BASE=$INST_PATH && \
-  make && \
-  make test && \
-  make install
-) >>$INIT_DIR/setup.log 2>&1
+cd $INIT_DIR && \
+perl Makefile.PL INSTALL_BASE=$INST_PATH && \
+make && \
+make test && \
+make install
 done_message "" "vagrent install failed."
 
 # cleanup all junk
