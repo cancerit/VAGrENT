@@ -38,7 +38,7 @@ WriteMakefile(
                         bin/AnnotateVcf.pl)],
   PREREQ_PM     => {
                     'Attribute::Abstract' => '1.02',
-                    'Bio::DB::Sam' => '1.39',
+                    'Bio::DB::HTS' => '1.11',
                     'Bio::Root::Version' => '1.006924',# this is the only way to get Bio::Perl to behave
                                                        # and return the version correctly
                     'Capture::Tiny' => 0.24,

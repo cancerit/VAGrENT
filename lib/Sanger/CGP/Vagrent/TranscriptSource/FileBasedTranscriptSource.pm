@@ -2,21 +2,21 @@ package Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource;
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -29,14 +29,8 @@ use Log::Log4perl;
 use Data::Dumper;
 use Const::Fast qw(const);
 
-use Bio::DB::Sam;
-
-# prevent the init warnings from Tabix
-BEGIN {
-  $SIG{__WARN__} = sub {warn $_[0] unless( $_[0] =~ m/^Subroutine Tabix.* redefined/)};
-};
-
-use Tabix;
+use Bio::DB::HTS;
+use Bio::DB::HTS::Tabix;
 
 use Sanger::CGP::Vagrent::Data::Transcript;
 use Sanger::CGP::Vagrent::Data::Exon;
@@ -126,7 +120,7 @@ sub _generateLocationString {
 
 sub _getTranscriptsFromCache {
   my ($self,$gp) = @_;
-  $self->{_cache_tbx} = Tabix->new('-data' => $self->{_cache}) unless defined $self->{_cache_tbx};
+  $self->{_cache_tbx} = Bio::DB::HTS::Tabix->new(filename => $self->{_cache}) unless defined $self->{_cache_tbx};
   my $min;
   my $max = $gp->getMaxPos + $SEARCH_BUFFER;
   if($gp->getMinPos() < $SEARCH_BUFFER){
@@ -134,17 +128,15 @@ sub _getTranscriptsFromCache {
   } else {
     $min = ($gp->getMinPos - $SEARCH_BUFFER) - 1;
   }
-  my $res = $self->{_cache_tbx}->query($gp->getChr(),$min,$max);
-  return undef unless defined $res;
+  my $iter = $self->{_cache_tbx}->query(sprintf '%s:%d-%d', $gp->getChr(),$min,$max);
+  return undef unless defined $iter;
   my $out = undef;
-  if(defined $res->get){
-    while(my $ret = $self->{_cache_tbx}->read($res)){
-      my $raw = (split("\t",$ret))[6];
-      my $VAR1;
-      eval $raw;
-      $VAR1->{_cdnaseq} = $self->_getTranscriptSeq($VAR1);
-      push @$out, $VAR1;
-    }
+  while(my $ret = $iter->next){
+    my $raw = (split("\t",$ret))[6];
+    my $VAR1;
+    eval $raw;
+    $VAR1->{_cdnaseq} = $self->_getTranscriptSeq($VAR1);
+    push @$out, $VAR1;
   }
   return $out;
 }
@@ -185,7 +177,7 @@ sub _setCacheFile {
 sub _getTranscriptSeq {
   my ($self,$trans) = @_;
   unless(defined $self->{_fai_obj}){
-    $self->{_fai_obj} = Bio::DB::Sam::Fai->load($self->{_cache_fa});
+    $self->{_fai_obj} = Bio::DB::HTS::Fai->load($self->{_cache_fa});
   }
   return $self->{_fai_obj}->fetch($trans->getAccession);
 }
