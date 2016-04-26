@@ -879,12 +879,20 @@ sub _isWithin5KBOffsetDistance {
 	return 0;
 }
 
+sub getUpDownStream5kbCutoff {
+  return $UPDOWNSTREAM_5KB_CUTOFF;
+}
+
 sub _isWithin2KBUpstreamOffsetDistance {
 	my ($self,$offset) = @_;
 	if($offset < 0 && $offset >= $UPSTREAM_2KB_CUTOFF){
 		return 1;
 	}
 	return 0;
+}
+
+sub getUpStream2kbCutoff {
+  return $UPSTREAM_2KB_CUTOFF;
 }
 
 sub _isWithin500BPDownstreamOffsetDistance {
@@ -894,6 +902,11 @@ sub _isWithin500BPDownstreamOffsetDistance {
 	}
 	return 0;
 }
+
+sub getDownStream500bpCutoff {
+  return $DOWNSTREAM_500BP_CUTOFF;
+}
+
 
 sub _coversStartCodon {
 	my ($self,$tran,$anno) = @_;
