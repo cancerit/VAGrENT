@@ -103,7 +103,10 @@ sub convertGtf {
 
     if(exists $attr{'transcript_id'} && defined $attr{'transcript_id'}){
 			$acc = unquoteValue($attr{'transcript_id'});
-			next unless exists $lookup->{$acc};
+			unless(exists $lookup->{$acc}) {
+			  $acc .= '.'.unquoteValue($attr{'transcript_version'});
+			  next unless exists $lookup->{$acc};
+			}
 		} else {
 			next;
 		}

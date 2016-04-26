@@ -58,8 +58,8 @@ sub dumpGeneRegions {
 	$self->_getTranscriptSource()->setDumpRegion($gr);
   foreach my $t($self->_getTranscriptSource()->getTranscripts($gr)){
 
-      my $min = $t->getGenomicMinPos - $self->UPDOWNSTREAM_5KB_CUTOFF;
-      my $max = $t->getGenomicMaxPos + $self->UPDOWNSTREAM_5KB_CUTOFF;
+      my $min = $t->getGenomicMinPos - $self->getUpDownStream5kbCutoff;
+      my $max = $t->getGenomicMaxPos + $self->getUpDownStream5kbCutoff;
       if($min < $gr->getMinPos){
         $min = $gr->getMinPos;
       }
@@ -117,83 +117,6 @@ sub _dumpRegionsWithExonConverter {
   return 1;
 }
 
-
-=head
-
-sub _dumpRegionsWithExonConverter {
-	my ($self,$gr,$exonConverter) = @_;
-	unless(defined($gr) && $gr->isa('Sanger::CGP::Vagrent::Data::GenomicRegion')){
-		$log->error("Did not recieve a Sanger::CGP::Vagrent::Data::GenomicRegion object");
-		return undef;
-	}
-	$self->_getTranscriptSource()->setDumpRegion($gr);
-	my $count = 0;
-#	while(my @trans = $self->_getTranscriptSource()->getTranscriptsForNextGeneInDumpRegion()){
-#		last unless(scalar(@trans) > 0 && defined $trans[0]);
-		my @regions;
-#		my @sortedTrans = $self->_defaultTranscriptSort(@trans);
-#		my $topTrans = $sortedTrans[0];
-		$count++;
-
-#		foreach my $t(@trans){
-    foreach my $t($self->_getTranscriptSource()->getTranscripts($gr)){
-			warn join('|',$t->getGeneName,$t->getAccession,$t->getCCDS,$t->getCdsMinPos,$t->getCdsMaxPos,$t->getCdsLength,length($t->getcDNASeq)),"\n";
-			my @transReg;
-			my $ec = 0;
-			my @exons = $t->getExonsGenomicOrder;
-			foreach my $e(@exons){
-				$ec++;
-				my $editStart = 1;
-				my $editEnd = 1;
-				$editStart = 0 if $ec == 1;
-				$editEnd = 0 if $ec == scalar(@exons);
-				#print "\t",join('|',$editStart,$editEnd,$e->getMinPos,$e->getMaxPos,$t->getStrand,$ec,scalar(@exons)),"\n";
-				my @eReg = &$exonConverter($e,$t,$editStart,$editEnd);
-				next unless(defined $eReg[0]);
-				push(@transReg,@eReg);
-			}
-
-			foreach my $tr (@transReg){
-				#print join(',','tr',$tr->getChr,$tr->getMinPos,$tr->getMaxPos),"\n";
-				my $new = 1;
-				foreach my $r(@regions){
-					if($self->_regionComparison($r,$tr)){
-						$new = 0;
-						last;
-					}
-				}
-				if($new){
-					#print join(',',"\t",$tr->getChr,$tr->getMinPos,$tr->getMaxPos,'NEW'),"\n";
-					push(@regions,$tr);
-				}
-			}
-		}
-		my @sortedReg = sort {$a->getMinPos <=> $b->getMinPos || $a->getMaxPos <=> $b->getMaxPos} @regions;
- 		my @finalList;
- 		my $lastAdded = undef;
- 		foreach my $r(@sortedReg){
- 			if(defined $lastAdded) {
- 				unless($self->_regionComparison($lastAdded,$r)){
-					push(@finalList,$r);
-					$lastAdded = $r;
-					next;
- 				}
- 			} else {
- 				push(@finalList,$r);
- 				$lastAdded = $r;
- 				next;
- 			}
-
-  		}
-   		foreach my $r(@finalList){
-   			$self->_getWriter->write($r);
-   		}
-   		#last if($count > 20);
-#	}
-	return 1;
-}
-
-=cut
 
 sub _regionComparison {
 	my ($self,$ref,$test,$loud) = @_;

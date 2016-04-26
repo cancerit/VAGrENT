@@ -45,7 +45,7 @@ use Cwd qw(abs_path);
 use Const::Fast qw(const);
 use Data::Dumper;
 
-const my @ENSMBL_REF_FILE_EXTENTIONS => qw(cdna.all.fa.gz gtf.gz ncrna.fa.gz);
+const my @ENSMBL_REF_FILE_EXTENTIONS => qw(cdna.all.fa.gz ncrna.fa.gz);
 const my $FASTA_FILTER_SCRIPT => 'Admin_EnsemblTranscriptFastaFilter.pl';
 const my $GTF_CONVERSION_SCRIPT => 'Admin_EnsemblGtf2CacheConverter.pl';
 const my $FILTERED_FASTA_SUFFIX => 'vagrent.fa';
@@ -184,6 +184,7 @@ sub getFileUrlsForRetrival {
 					push @out, $dir. '/' . (split '/', $file)[-1];
 				}
 			}
+			push @out, $dir. '/' . (split '/', $file)[-1] if($file =~ m/[[:digit:]]\.gtf\.gz$/);
 		}
 	}
 	return \@out;
@@ -217,7 +218,8 @@ sub option_builder {
 		'c|ccds=s' => \$opts{'c'},
   );
   pod2usage() if($opts{'h'});
-  pod2usage('Must specify the output directory to use') unless(defined($opts{'o'}) && -e $opts{'o'} && -d $opts{'o'} && -w $opts{'o'});
+  pod2usage('Must specify the output directory to use') unless(defined $opts{'o'});
+  pod2usage("Output directory must exist and be writable: $opts{o}") unless(-e $opts{'o'} && -d $opts{'o'} && -w $opts{'o'});
   pod2usage('Must specify the cDNA path for the ensembl reference data') unless defined $opts{'f'} && $opts{'f'} =~ m|cdna/?$|;
   if(defined($opts{'n'})){
   	pod2usage('Unable to read the non-coding transcript status file') unless -e $opts{'n'} && -r $opts{'n'};
