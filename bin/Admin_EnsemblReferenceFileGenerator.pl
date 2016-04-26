@@ -218,7 +218,8 @@ sub option_builder {
 		'c|ccds=s' => \$opts{'c'},
   );
   pod2usage() if($opts{'h'});
-  pod2usage('Must specify the output directory to use') unless(defined($opts{'o'}) && -e $opts{'o'} && -d $opts{'o'} && -w $opts{'o'});
+  pod2usage('Must specify the output directory to use') unless(defined $opts{'o'});
+  pod2usage("Output directory must exist and be writable: $opts{o}") unless(-e $opts{'o'} && -d $opts{'o'} && -w $opts{'o'});
   pod2usage('Must specify the cDNA path for the ensembl reference data') unless defined $opts{'f'} && $opts{'f'} =~ m|cdna/?$|;
   if(defined($opts{'n'})){
   	pod2usage('Unable to read the non-coding transcript status file') unless -e $opts{'n'} && -r $opts{'n'};
