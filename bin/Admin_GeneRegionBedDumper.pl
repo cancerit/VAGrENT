@@ -2,21 +2,21 @@
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -24,6 +24,9 @@
 
 use strict;
 use warnings;
+
+use FindBin qw($Bin);
+use lib "$Bin/../lib";
 
 use English qw( -no_match_vars );
 use Carp;
@@ -72,9 +75,9 @@ eval {
 			push(@$dumpers,Sanger::CGP::Vagrent::GenomicRegionDumper::SubstitutionGenomicRegionDumper->new('transcriptSource' => $ts, 'writer' => $writer));
 		} else {
 			push(@$dumpers,Sanger::CGP::Vagrent::GenomicRegionDumper::IndelGenomicRegionDumper->new('transcriptSource' => $ts, 'writer' => $writer));
-		} 
+		}
   }
-  
+
   my $dc = scalar(@$dumpers);
 
   foreach my $c (@faiData){
@@ -108,7 +111,7 @@ eval {
 
     my ($sortOUT,$sortERR,$sortEXIT) = capture{ system($sortCmd) };
     croak("bedtools sort command failed : $sortCmd\n $sortERR") unless $sortEXIT == 0;
-    
+
     my ($mergeOUT,$mergeERR,$mergeEXIT) = capture{ system($mergeCmd) };
     croak("bedtools merge command failed : $mergeCmd\n $mergeERR") unless $mergeEXIT == 0;
 
@@ -120,13 +123,13 @@ eval {
 
       my $zipCmd = 'set -o pipefail; sort -k 1,1 -k2,3n '.$finalFile.' | bgzip > '.$gzfile;
       my $tabixCmd = 'tabix -p bed '.$gzfile;
-      
+
       my ($zipOUT,$zipERR,$zipEXIT) = capture{ system($zipCmd) };
       croak("zip command failed : $zipCmd\n $zipERR") unless $zipEXIT == 0;
 
       my ($tabixOUT,$tabixERR,$tabixEXIT) = capture{ system($tabixCmd) };
       croak("tabix command failed : $tabixCmd\n $tabixERR") unless $tabixEXIT == 0;
-      
+
       croak("unable to remove $finalFile") unless unlink $finalFile;
 		}
 	}
@@ -164,24 +167,24 @@ sub option_builder {
     'c|cache=s' => \$opts{'cache'},
 		'fai|fai_file=s' => \$opts{'fai'},
 	);
-  
+
   pod2usage() unless(scalar(@args));
 
 	pod2usage() if($opts{'help'});
-  
+
   if($opts{'version'}){
     print 'Version: '.Sanger::CGP::Vagrent->VERSION."\n";
     exit;
   }
-  
+
   pod2usage(q{species must be defined}) unless(defined $opts{'species'});
   pod2usage(q{assembly must be defined}) unless(defined $opts{'assembly'});
-  
+
   pod2usage(q{fai file must be defined}) unless($opts{'fai'});
   pod2usage(q{fai file must exist}) unless(-e $opts{'fai'});
   pod2usage(q{fai file must be a file}) unless(-f $opts{'fai'});
   pod2usage(q{fai file is an empty file}) unless(-s $opts{'fai'});
-  
+
   pod2usage(q{cache file must be defined}) unless($opts{'cache'});
   pod2usage(q{cache file must exist}) unless(-e $opts{'cache'});
 	pod2usage(q{cache file must be a file}) unless(-f $opts{'cache'});
@@ -213,8 +216,8 @@ Admin_GeneRegionBedDumper.pl [-h] -sp <SPECIES> -as <ASSEMBLY> -c <VAGRENT_> -fa
 
     --cache       (-c)      Vagrent reference data cache file
 
-  Optional 
-  
+  Optional
+
     --version     (-v)      Output version number
 
     --build_index (-i)      Generate a zipped and tabix indexed version of the bed file
