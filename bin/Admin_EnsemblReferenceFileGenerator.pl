@@ -45,7 +45,7 @@ use Cwd qw(abs_path);
 use Const::Fast qw(const);
 use Data::Dumper;
 
-const my @ENSMBL_REF_FILE_EXTENTIONS => qw(cdna.all.fa.gz gtf.gz ncrna.fa.gz);
+const my @ENSMBL_REF_FILE_EXTENTIONS => qw(cdna.all.fa.gz ncrna.fa.gz);
 const my $FASTA_FILTER_SCRIPT => 'Admin_EnsemblTranscriptFastaFilter.pl';
 const my $GTF_CONVERSION_SCRIPT => 'Admin_EnsemblGtf2CacheConverter.pl';
 const my $FILTERED_FASTA_SUFFIX => 'vagrent.fa';
@@ -184,6 +184,7 @@ sub getFileUrlsForRetrival {
 					push @out, $dir. '/' . (split '/', $file)[-1];
 				}
 			}
+			push @out, $dir. '/' . (split '/', $file)[-1] if($file =~ m/[[:digit:]]\.gtf\.gz$/);
 		}
 	}
 	return \@out;
