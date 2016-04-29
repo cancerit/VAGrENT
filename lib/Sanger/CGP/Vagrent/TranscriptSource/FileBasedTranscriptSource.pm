@@ -126,7 +126,7 @@ sub _getTranscriptsFromCache {
   if($gp->getMinPos() < $SEARCH_BUFFER){
     $min = 0;
   } else {
-    $min = ($gp->getMinPos - $SEARCH_BUFFER) - 1;
+    $min = ($gp->getMinPos - $SEARCH_BUFFER);
   }
   my $iter = $self->{_cache_tbx}->query(sprintf '%s:%d-%d', $gp->getChr(),$min,$max);
   return undef unless defined $iter;
