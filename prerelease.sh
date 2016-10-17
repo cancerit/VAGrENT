@@ -46,7 +46,7 @@ echo '########## Running perl tests ##########'
 export HARNESS_PERL_SWITCHES=-MDevel::Cover=-db,reports,-select='^lib/*\.pm$',-ignore,'^t/'
 rm -rf docs
 mkdir -p docs/reports_text
-prove -w -I lib t
+prove -j 4 -w -I lib t
 
 echo '### Generating test/pod coverage reports ###'
 # removed 'condition' from coverage as '||' 'or' doesn't work properly
