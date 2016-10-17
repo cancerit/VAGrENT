@@ -9,6 +9,10 @@ each variation/transcript combination and describes the effects in the mRNA, CDS
 contexts. It provides details of the sequence and position of the change within the transcript/protein
 as well as Sequence Ontology terms to classify its consequences.
 
+| Master | Dev |
+|---|---|
+|  [![Build Status](https://travis-ci.org/cancerit/VAGrENT.svg?branch=master)](https://travis-ci.org/cancerit/VAGrENT) | [![Build Status](https://travis-ci.org/cancerit/VAGrENT.svg?branch=dev)](https://travis-ci.org/cancerit/VAGrENT) |
+
 ---
 
 ###Dependencies/Install

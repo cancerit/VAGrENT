@@ -1,3 +1,4 @@
+.travis.yml
 bin/Admin_EnsemblGtf2CacheConverter.pl
 bin/Admin_EnsemblReferenceFileGenerator.pl
 bin/Admin_EnsemblTranscriptFastaFilter.pl
