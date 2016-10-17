@@ -26,19 +26,6 @@ SOURCE_SAMTOOLS="https://github.com/samtools/samtools/releases/download/1.3/samt
 BIODBHTS_INSTALL="https://raw.githubusercontent.com/Ensembl/Bio-HTS/master/INSTALL.pl"
 SOURCE_VCFTOOLS="https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz"
 
-done_message () {
-    if [ $? -eq 0 ]; then
-        echo " done."
-        if [ "x$1" != "x" ]; then
-            echo $1
-        fi
-    else
-        echo " failed.  See setup.log file for error messages." $2
-        echo "    Please check INSTALL file for items that should be installed by a package manager"
-        exit 1
-    fi
-}
-
 get_distro () {
   EXT=""
   DECOMP=""
@@ -71,31 +58,34 @@ get_file () {
   fi
 }
 
-if [ "$#" -ne "1" ] ; then
-  echo "Please provide an installation path  such as /opt/ICGC"
+if [[ ($# -ne 1 && $# -ne 2) ]] ; then
+  echo "Please provide an installation path and optionally perl lib paths to allow, e.g."
+  echo "  ./setup.sh /opt/myBundle"
+  echo "OR all elements versioned:"
+  echo "  ./setup.sh /opt/cgpVcf-X.X.X /opt/PCAP-X.X.X/lib/perl"
   exit 0
 fi
 
-CPU=`cat /proc/cpuinfo | egrep "^processor" | wc -l`
+INST_PATH=$1
+
+if [[ $# -eq 2 ]] ; then
+  CGP_PERLLIBS=$2
+fi
+
+CPU=`grep -c ^processor /proc/cpuinfo`
+if [[ $? -eq 0 ]]; then
+  if [[ $CPU -gt 6 ]]; then
+    CPU=6
+  fi
+else
+  CPU=1
+fi
 echo "Max compilation CPUs set to $CPU"
 
 INST_PATH=$1
 
 # get current directory
 INIT_DIR=`pwd`
-
-# log information about this system
-(
-    echo '============== System information ===='
-    set -x
-    lsb_release -a
-    uname -a
-    sw_vers
-    system_profiler
-    grep MemTotal /proc/meminfo
-    set +x
-    echo
-) >>$INIT_DIR/setup.log 2>&1
 
 set -e
 
@@ -130,12 +120,11 @@ perl $SETUP_DIR/cpanm -l $INST_PATH App::cpanminus
 CPANM=`which cpanm`
 echo $CPANM
 
-perlmods=( "File::ShareDir" "File::ShareDir::Install" )
+perlmods=( "File::ShareDir" "File::ShareDir::Install" "Bio::Root::Version@1.006924")
 
 for i in "${perlmods[@]}" ; do
   echo -n "Installing build prerequisite $i..."
-  $CPANM -v --mirror http://cpan.metacpan.org -l $INST_PATH $i
-  done_message "" "Failed during installation of $i."
+  $CPANM --notest --mirror http://cpan.metacpan.org -l $INST_PATH $i
 done
 
 CURR_TOOL="vcftools"
@@ -145,40 +134,37 @@ if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
   echo -n " previously installed ..."
 else
   get_distro $CURR_TOOL $CURR_SOURCE
-  cd $SETUP_DIR/$CURR_TOOL && \
-  patch src/perl/Vcf.pm < $INIT_DIR/patches/vcfToolsProcessLog.diff && \
-  ./configure --prefix=$INST_PATH --with-pmdir=$INST_PATH/lib/perl5 && \
-  make -j$CPU && \
-  make install && \
+  cd $SETUP_DIR/$CURR_TOOL
+  patch src/perl/Vcf.pm < $INIT_DIR/patches/vcfToolsProcessLog.diff
+  ./configure --prefix=$INST_PATH --with-pmdir=$INST_PATH/lib/perl5
+  make -j$CPU
+  make install
   touch $SETUP_DIR/$CURR_TOOL.success
 fi
-done_message "" "Failed to build $CURR_TOOL."
 
 echo -n "Building samtools ..."
 if [ -e "$SETUP_DIR/samtools.success" ]; then
   echo -n " previously installed ...";
 else
-  cd $SETUP_DIR &&
-  get_distro "samtools" $SOURCE_SAMTOOLS &&
-  cd samtools &&
-  ./configure --enable-plugins --enable-libcurl --prefix=$INST_PATH &&
-  make all all-htslib &&
-  make install install-htslib &&
+  cd $SETUP_DIR
+  get_distro "samtools" $SOURCE_SAMTOOLS
+  cd samtools
+  ./configure --enable-plugins --enable-libcurl --prefix=$INST_PATH
+  make all all-htslib
+  make install install-htslib
   touch $SETUP_DIR/samtools.success
 fi
-done_message "" "Failed to build samtools."
 
-echo -n "Building Bio::DB::HTS ..."
-if [ -e $SETUP_DIR/biohts.success ]; then
-  echo -n " previously installed ...";
-else
-  cd $SETUP_DIR &&
-  $CPANM --mirror http://cpan.metacpan.org --notest -l $INST_PATH Module::Build Bio::Root::Version &&
+CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Bio::DB::HTS`
+if [[ "x$CHK" == "x" ]] ; then
+  echo -n "Building Bio::DB::HTS ..."
+  cd $SETUP_DIR
   # now Bio::DB::HTS
-  get_file "INSTALL.pl" $BIODBHTS_INSTALL &&
-  perl -I $PERL5LIB INSTALL.pl --prefix $INST_PATH --static &&
-  rm -f BioDbHTS_INSTALL.pl &&
-  touch $SETUP_DIR/biohts.success
+  get_file "INSTALL.pl" $BIODBHTS_INSTALL
+  perl -I $PERL5LIB INSTALL.pl --prefix $INST_PATH --static
+  rm -f BioDbHTS_INSTALL.pl
+else
+  echo "Bio::DB::HTS already installed"
 fi
 
 cd $INIT_DIR
@@ -189,15 +175,13 @@ if ! ( perl -MExtUtils::MakeMaker -e 1 >/dev/null 2>&1); then
 fi
 
 $CPANM --mirror http://cpan.metacpan.org --notest -l $INST_PATH/ --installdeps . < /dev/null
-done_message "" "Failed during installation of core dependencies."
 
 echo -n "Installing vagrent ..."
-cd $INIT_DIR && \
-perl Makefile.PL INSTALL_BASE=$INST_PATH && \
-make && \
-make test && \
+cd $INIT_DIR
+perl Makefile.PL INSTALL_BASE=$INST_PATH
+make
+make test
 make install
-done_message "" "vagrent install failed."
 
 # cleanup all junk
 rm -rf $SETUP_DIR
