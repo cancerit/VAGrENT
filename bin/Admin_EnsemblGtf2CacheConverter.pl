@@ -62,7 +62,7 @@ try {
 	$ccds = parseCCDSFile($opts->{'c'}) if defined $opts->{'c'};
 	convertGtf($opts,$lookup,$ccds);
 } catch {
-  warn "An error occurred while building reference support files\:\n\t$_"; # not $@
+  die "An error occurred while building reference support files\:\n\t$_"; # not $@
 };
 
 sub convertGtf {
