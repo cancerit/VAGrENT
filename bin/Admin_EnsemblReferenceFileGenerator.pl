@@ -53,7 +53,7 @@ const my $CACHE_SUFFIX_GZ => 'vagrent.cache.gz';
 const my $CACHE_SUFFIX_RAW => 'vagrent.cache.raw';
 const my @TRANSCRIPT_BIOTYPES => qw(protein_coding lincRNA miRNA snoRNA rRNA snRNA);
 const my $ENSEMBL_SPECIES_ASSEMBLY => qr/([^\.]+?)\.(.+?)\./;
-const my $ENSEMBL_VERSION_PATTERN => qr/^ftp\:\/\/ftp\.ensembl\.org\/pub\/release\-(\d+?)\//;
+const my $ENSEMBL_VERSION_PATTERN => qr/^ftp\:\/\/ftp\.ensembl(?:genomes)?\.org\/pub\/release\-(\d+?)\//;
 
 try {
   my $opts = option_builder();
