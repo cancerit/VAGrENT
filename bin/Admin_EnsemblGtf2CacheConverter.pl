@@ -104,6 +104,7 @@ sub convertGtf {
     if(exists $attr{'transcript_id'} && defined $attr{'transcript_id'}){
 			$acc = unquoteValue($attr{'transcript_id'});
 			unless(exists $lookup->{$acc}) {
+        next unless(exists $attr{'transcript_version'});
 			  $acc .= '.'.unquoteValue($attr{'transcript_version'});
 			  next unless exists $lookup->{$acc};
 			}
@@ -125,7 +126,15 @@ sub convertGtf {
       $c++;
       $wip->{$acc}->{'type'} = $bioType;
 			$wip->{$acc}->{'acc'} = $acc;
-			$wip->{$acc}->{'gene'} = unquoteValue($attr{'gene_name'});
+			if(exists $attr{'gene_name'}) {
+			  $wip->{$acc}->{'gene'} = unquoteValue($attr{'gene_name'});
+			}
+			elsif(exists $attr{'gene_id'}) {
+			  $wip->{$acc}->{'gene'} = unquoteValue($attr{'gene_id'});
+			}
+			else {
+			  croak "Cannot identify gene name or ID for structure: ".Dumper(\%attr);
+			}
       $wip->{$acc}->{'CCDS'} = unquoteValue($attr{'ccds_id'}) if exists $attr{'ccds_id'};
     }
     if($lineType eq $CDS_TYPE && !defined $wip->{$acc}->{'protacc'}){
@@ -257,8 +266,14 @@ sub convertTranscript {
 
 sub writeTranscript {
 	my ($fh,$t,$rawT) = @_;
-	print $fh join("\t",$rawT->{'lines'}->{$EXON_TYPE}->[0]->[0],$t->getGenomicMinPos - 1,
-											$t->getGenomicMaxPos,$t->getAccession,$t->getGeneName,length $t->getcDNASeq);
+	eval {
+    print $fh join("\t",$rawT->{'lines'}->{$EXON_TYPE}->[0]->[0],$t->getGenomicMinPos - 1,
+                        $t->getGenomicMaxPos,$t->getAccession,$t->getGeneName,length $t->getcDNASeq);
+    1;
+	};
+	if($@) {
+	  die "\nTranscript Object: ".Dumper($t)."\n\nExon_Type layer: ".Dumper($rawT->{'lines'}->{$EXON_TYPE})."\n\nERROR: Abandon hope, Ensemble structure has changed\n";
+	}
 	$t->{_cdnaseq} = undef;
 	print $fh "\t",Dumper($t),"\n";
 }
