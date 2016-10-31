@@ -2,21 +2,21 @@
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -87,7 +87,7 @@ my $header_already_parsed = 0;
 
 eval {
   my $options = option_builder();
-  Vcf::validate($options->{'input'});
+  Vcf::validate($options->{'input'}) unless($options->{'novalidate'});
   my $vcf_in = Vcf->new( file => $options->{'input'} );
   unless(defined $options->{'species'} && defined $options->{'assembly'}) {
     croak 'unable to determine species and assembly from VCF file, please specify on command line' unless find_species_in_vcf($vcf_in,$options);
@@ -102,7 +102,7 @@ eval {
 
   process_data($vcf_in,$OUT_FH,$annotator,$options);
   close $OUT_FH or croak 'Failed to close: '.$output;
-  Vcf::validate($output);
+  Vcf::validate($output) unless($options->{'novalidate'});
 
   if($options->{'tabix'}){
     compressAndIndex($options,$output);
@@ -118,20 +118,20 @@ eval {
 
 sub compressAndIndex {
   my ($options, $tmpfile) = @_;
-  
+
   my $sort_cmd = sprintf $SORT_CMD, $tmpfile, $options->{'output'};
   my $bgzip_cmd = sprintf $BGZIP_CMD, $options->{'output'};
   my $totabix = $options->{'output'} .'.gz';
   my $tabix_cmd = sprintf $TABIX_CMB, $totabix;
-  
+
   try {
     my $tabix_in = $options->{'input'}.'.tbx';
     unless(-e $tabix_in){
-      # If the input has a tabix index it must have already been sorted, 
+      # If the input has a tabix index it must have already been sorted,
       # we haven't changed the order of the file so we can skip this sort
       system($sort_cmd);
     }
-    
+
   } catch {
     warn "EXECUTION ERROR: $sort_cmd\n";
     die $_;
@@ -156,7 +156,7 @@ sub compressAndIndex {
 
 sub process_data {
   my ($in,$out,$anno,$opts) = @_;
-  print $out generate_header($in,$opts);
+  print $out generate_header($in,$opts) unless($opts->{'novalidate'});
   my $c = 0;
   while(my $record = $in->next_data_array) {
     $c++;
@@ -195,7 +195,7 @@ sub generate_annotation {
         $rec->[$INFO_COL] = $vcf->add_info_field($rec->[$INFO_COL], 'VC' => $annotator->getOntologySummary($worst));
       }
     }
-  } 
+  }
   return;
 }
 
@@ -206,7 +206,7 @@ sub annotate {
     @annotationGroups = $annotator->getAnnotation($var);
   } catch {
       warn "caught error: $_\n"; # not $@
-  };  
+  };
   return @annotationGroups;
 }
 
@@ -462,6 +462,7 @@ sub option_builder {
     'o|output=s' => \$opts{'output'},
     'c|cache=s' => \$opts{'cache'},
     't|tabix' => \$opts{'tabix'},
+    'n|novalid' => \$opts{'novalidate'},
     'p|process=n' => \$opts{'process'},
     'sp|species=s' => \$opts{'species'},
     'as|assembly=s' => \$opts{'assembly'},
@@ -486,7 +487,7 @@ sub option_builder {
 	pod2usage(q{'-c' is an empty file}) unless(-s $opts{'cache'});
 
 	pod2usage(q{'-o' must be defined}) unless($opts{'output'});
-	
+
   return \%opts;
 }
 
@@ -517,6 +518,11 @@ AnnotateVcf.pl [-h] [-t] -i <IN_FILE> -o <OUT_FILE> -c <VAGRENT_CACHE_FILE> [-sp
     --assembly  (-as)     Genome assembly version
 
   Optional
+
+    --novalid   (-n)      Don't validate the input/output VCF
+                            - Allows unheaded tsv file with VCF column format, cols
+                              - 1-6 required, 7-11 as '.'
+                            - Does not generate a valid VCF
 
     --version   (-v)      Output version number
 

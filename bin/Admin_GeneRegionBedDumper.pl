@@ -106,8 +106,8 @@ eval {
 		my $rawFile = $rawFileNames[$i];
 		my $sortedFile = $sortedFileNames[$i];
 		my $finalFile = $finalFileNames[$i];
-		my $sortCmd = '/software/CGP/bin/bedtools sort -i '.$rawFile.' > '.$sortedFile;
-		my $mergeCmd = '/software/CGP/bin/bedtools merge -i '.$sortedFile.' > '.$finalFile;
+		my $sortCmd = 'bedtools sort -i '.$rawFile.' > '.$sortedFile;
+		my $mergeCmd = 'bedtools merge -i '.$sortedFile.' > '.$finalFile;
 
     my ($sortOUT,$sortERR,$sortEXIT) = capture{ system($sortCmd) };
     croak("bedtools sort command failed : $sortCmd\n $sortERR") unless $sortEXIT == 0;
