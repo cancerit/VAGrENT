@@ -15,6 +15,7 @@ addons:
    - libncurses5-dev
    - libpstreams-dev
    - libcurl4-openssl-dev
+   - liblzma-dev
 
 install: true
 
