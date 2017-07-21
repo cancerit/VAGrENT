@@ -1,7 +1,7 @@
 #!/bin/bash
 
 ##########LICENCE##########
-# Copyright (c) 2014-2016 Genome Research Ltd.
+# Copyright (c) 2014-2017 Genome Research Ltd.
 #
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
 #
@@ -25,6 +25,9 @@
 SOURCE_SAMTOOLS="https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2"
 BIODBHTS_INSTALL="https://raw.githubusercontent.com/Ensembl/Bio-HTS/master/INSTALL.pl"
 SOURCE_VCFTOOLS="https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz"
+# Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
+# No upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved
+SOURCE_BEDTOOLS="https://github.com/arq5x/bedtools2/releases/download/v2.21.0/bedtools-2.21.0.tar.gz"
 
 get_distro () {
   EXT=""
@@ -62,7 +65,7 @@ if [[ ($# -ne 1 && $# -ne 2) ]] ; then
   echo "Please provide an installation path and optionally perl lib paths to allow, e.g."
   echo "  ./setup.sh /opt/myBundle"
   echo "OR all elements versioned:"
-  echo "  ./setup.sh /opt/cgpVcf-X.X.X /opt/PCAP-X.X.X/lib/perl"
+  echo "  ./setup.sh /opt/myBundle /opt/cgpVcf-X.X.X/lib/perl5:/opt/PCAP-X.X.X/lib/perl5"
   exit 0
 fi
 
@@ -127,11 +130,28 @@ for i in "${perlmods[@]}" ; do
   $CPANM --notest --mirror http://cpan.metacpan.org -l $INST_PATH $i
 done
 
+echo -n "Building bedtools2 ..."
+if [ -e $SETUP_DIR/bedtools.success ]; then
+  echo -n " previously installed (resumed)...";
+elif [ -e $INST_PATH/bin/bedtools ]; then
+  echo -n " previously installed ...";
+else
+  cd $SETUP_DIR
+  get_distro "bedtools2" $SOURCE_BEDTOOLS
+  mkdir -p bedtools2
+  tar --strip-components 1 -C bedtools2 -zxf bedtools2.tar.gz
+  make -C bedtools2 -j$CPU
+  cp bedtools2/bin/* $INST_PATH/bin/.
+  touch $SETUP_DIR/bedtools.success
+fi
+
 CURR_TOOL="vcftools"
 CURR_SOURCE=$SOURCE_VCFTOOLS
 echo -n "Building $CURR_TOOL ..."
 if [ -e $SETUP_DIR/$CURR_TOOL.success ]; then
-  echo -n " previously installed ..."
+  echo -n " previously installed (resumed) ..."
+elif [ -e $INST_PATH/bin/$CURR_TOOL ]; then
+  echo -n " previously installed ...";
 else
   get_distro $CURR_TOOL $CURR_SOURCE
   cd $SETUP_DIR/$CURR_TOOL
@@ -144,6 +164,8 @@ fi
 
 echo -n "Building samtools ..."
 if [ -e "$SETUP_DIR/samtools.success" ]; then
+  echo -n " previously installed (resumed) ...";
+elif [ -e $INST_PATH/bin/samtools ]; then
   echo -n " previously installed ...";
 else
   cd $SETUP_DIR
