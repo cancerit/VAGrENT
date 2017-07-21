@@ -34,6 +34,7 @@ use Data::Dumper;
 
 use List::Util qw(first);
 use File::Temp qw(tempfile);
+use File::Copy qw(copy);
 use Try::Tiny qw(try catch);
 
 use FindBin qw($Bin);
@@ -78,7 +79,7 @@ const my $INFO_COL => 7;
 const my $REPRE_BM => Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscriptBookmarker->new();
 const my $WORST_BM => Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker->new();
 
-const my $SORT_CMD => 'cat %s | vcf-sort > %s';
+const my $SORT_CMD => q{(grep -B 100000000 -m 1 '^#CHROM' %s ; grep -v '^#' %s | sort -k1,1 -k2,2n -k4,4 -k5,5) > %s};
 const my $BGZIP_CMD => 'bgzip %s';
 const my $TABIX_CMB => 'tabix -p vcf %s';
 
@@ -119,14 +120,17 @@ eval {
 sub compressAndIndex {
   my ($options, $tmpfile) = @_;
 
-  my $sort_cmd = sprintf $SORT_CMD, $tmpfile, $options->{'output'};
+  my $sort_cmd = sprintf $SORT_CMD, $tmpfile, $tmpfile, $options->{'output'};
   my $bgzip_cmd = sprintf $BGZIP_CMD, $options->{'output'};
   my $totabix = $options->{'output'} .'.gz';
   my $tabix_cmd = sprintf $TABIX_CMB, $totabix;
 
   try {
-    my $tabix_in = $options->{'input'}.'.tbx';
-    unless(-e $tabix_in){
+    my $tabix_in = $options->{'input'}.'.tbi';
+    if(-e $tabix_in) {
+      copy($tmpfile, $options->{'output'});
+    }
+    else {
       # If the input has a tabix index it must have already been sorted,
       # we haven't changed the order of the file so we can skip this sort
       system($sort_cmd);
