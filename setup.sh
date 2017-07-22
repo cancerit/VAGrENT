@@ -123,7 +123,7 @@ perl $SETUP_DIR/cpanm -l $INST_PATH App::cpanminus
 CPANM=`which cpanm`
 echo $CPANM
 
-perlmods=( "File::ShareDir" "File::ShareDir::Install" "Bio::Root::Version@1.006924")
+perlmods=( "File::ShareDir" "File::ShareDir::Install" "Module::Build" "Bio::Root::Version@1.006924")
 
 for i in "${perlmods[@]}" ; do
   echo -n "Installing build prerequisite $i..."
@@ -196,8 +196,6 @@ if [[ "x$CHK" == "x" ]] ; then
   else
     echo
     cd $SETUP_DIR
-    cpanm --no-interactive --notest --mirror http://cpan.metacpan.org -l $INST_PATH Module::Build
-    cpanm --no-interactive --notest --mirror http://cpan.metacpan.org -l $INST_PATH Bio::Root::Version
     rm -rf bioDbHts
     get_distro "bioDbHts" $SOURCE_BIOBDHTS
     tar --strip-components 1 -C bioDbHts -zxf bioDbHts.tar.gz
@@ -230,33 +228,6 @@ echo
   rm -f samtools.tar.bz2
   touch $SETUP_DIR/samtools.success
 fi
-
-# echo -n "Building samtools ..."
-# if [ -e "$SETUP_DIR/samtools.success" ]; then
-#   echo -n " previously installed (resumed) ...";
-# elif [ -e $INST_PATH/bin/samtools ]; then
-#   echo -n " previously installed ...";
-# else
-#   cd $SETUP_DIR
-#   get_distro "samtools" $SOURCE_SAMTOOLS
-#   cd samtools
-#   ./configure --enable-plugins --enable-libcurl --prefix=$INST_PATH
-#   make all all-htslib
-#   make install install-htslib
-#   touch $SETUP_DIR/samtools.success
-# fi
-#
-# CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Bio::DB::HTS`
-# if [[ "x$CHK" == "x" ]] ; then
-#   echo -n "Building Bio::DB::HTS ..."
-#   cd $SETUP_DIR
-#   # now Bio::DB::HTS
-#   get_file "INSTALL.pl" $BIODBHTS_INSTALL
-#   perl -I $PERL5LIB INSTALL.pl --prefix $INST_PATH --static
-#   rm -f BioDbHTS_INSTALL.pl
-# else
-#   echo "Bio::DB::HTS already installed"
-# fi
 
 cd $INIT_DIR
 
