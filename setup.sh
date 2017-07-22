@@ -21,9 +21,9 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-
 SOURCE_SAMTOOLS="https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.3.1.tar.bz2"
-BIODBHTS_INSTALL="https://raw.githubusercontent.com/Ensembl/Bio-HTS/master/INSTALL.pl"
+SOURCE_HTSLIB="https://github.com/samtools/htslib/releases/download/1.3.2/htslib-1.3.2.tar.bz2"
+SOURCE_BIOBDHTS="https://github.com/Ensembl/Bio-HTS/archive/2.3.tar.gz"
 SOURCE_VCFTOOLS="https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz"
 # Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
 # No upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved
@@ -162,32 +162,101 @@ else
   touch $SETUP_DIR/$CURR_TOOL.success
 fi
 
-echo -n "Building samtools ..."
-if [ -e "$SETUP_DIR/samtools.success" ]; then
-  echo -n " previously installed (resumed) ...";
-elif [ -e $INST_PATH/bin/samtools ]; then
-  echo -n " previously installed ...";
+if [ -e $SETUP_DIR/htslibGet.success ]; then
+  echo " already staged ...";
 else
+  echo
   cd $SETUP_DIR
-  get_distro "samtools" $SOURCE_SAMTOOLS
-  cd samtools
-  ./configure --enable-plugins --enable-libcurl --prefix=$INST_PATH
-  make all all-htslib
-  make install install-htslib
-  touch $SETUP_DIR/samtools.success
+  get_distro "htslib" $SOURCE_HTSLIB
+  touch $SETUP_DIR/htslibGet.success
 fi
+
+echo -n "Building htslib ..."
+if [ -e $SETUP_DIR/htslib.success ]; then
+  echo " previously installed ...";
+else
+  echo
+  mkdir -p htslib
+  tar --strip-components 1 -C htslib -jxf htslib.tar.bz2
+  cd htslib
+  ./configure --enable-plugins --enable-libcurl --prefix=$INST_PATH
+  make -j$CPU
+  make install
+  cd $SETUP_DIR
+  touch $SETUP_DIR/htslib.success
+fi
+
+export HTSLIB=$INST_PATH
 
 CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Bio::DB::HTS`
 if [[ "x$CHK" == "x" ]] ; then
   echo -n "Building Bio::DB::HTS ..."
-  cd $SETUP_DIR
-  # now Bio::DB::HTS
-  get_file "INSTALL.pl" $BIODBHTS_INSTALL
-  perl -I $PERL5LIB INSTALL.pl --prefix $INST_PATH --static
-  rm -f BioDbHTS_INSTALL.pl
+  if [ -e $SETUP_DIR/biohts.success ]; then
+    echo " previously installed ...";
+  else
+    echo
+    cd $SETUP_DIR
+    cpanm --no-interactive --notest --mirror http://cpan.metacpan.org -l $INST_PATH Module::Build
+    cpanm --no-interactive --notest --mirror http://cpan.metacpan.org -l $INST_PATH Bio::Root::Version
+    rm -rf bioDbHts
+    get_distro "bioDbHts" $SOURCE_BIOBDHTS
+    tar --strip-components 1 -C bioDbHts -zxf bioDbHts.tar.gz
+    cd bioDbHts
+    perl Build.PL --install_base=$INST_PATH --htslib=$INST_PATH
+    ./Build test
+    ./Build install
+    cd $SETUP_DIR
+    rm -f bioDbHts.tar.gz
+    touch $SETUP_DIR/biohts.success
+  fi
 else
-  echo "Bio::DB::HTS already installed"
+  echo "Bio::DB::HTS already installed ..."
 fi
+
+if [ -e $SETUP_DIR/samtools.success ]; then
+  echo " previously installed ...";
+else
+echo
+  cd $SETUP_DIR
+  rm -rf samtools
+  get_distro "samtools" $SOURCE_SAMTOOLS
+  mkdir -p samtools
+  tar --strip-components 1 -C samtools -xjf samtools.tar.bz2
+  cd samtools
+  ./configure --enable-plugins --enable-libcurl --with-htslib=$HTSLIB --prefix=$INST_PATH
+  make -j$CPU all
+  make install
+  cd $SETUP_DIR
+  rm -f samtools.tar.bz2
+  touch $SETUP_DIR/samtools.success
+fi
+
+# echo -n "Building samtools ..."
+# if [ -e "$SETUP_DIR/samtools.success" ]; then
+#   echo -n " previously installed (resumed) ...";
+# elif [ -e $INST_PATH/bin/samtools ]; then
+#   echo -n " previously installed ...";
+# else
+#   cd $SETUP_DIR
+#   get_distro "samtools" $SOURCE_SAMTOOLS
+#   cd samtools
+#   ./configure --enable-plugins --enable-libcurl --prefix=$INST_PATH
+#   make all all-htslib
+#   make install install-htslib
+#   touch $SETUP_DIR/samtools.success
+# fi
+#
+# CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Bio::DB::HTS`
+# if [[ "x$CHK" == "x" ]] ; then
+#   echo -n "Building Bio::DB::HTS ..."
+#   cd $SETUP_DIR
+#   # now Bio::DB::HTS
+#   get_file "INSTALL.pl" $BIODBHTS_INSTALL
+#   perl -I $PERL5LIB INSTALL.pl --prefix $INST_PATH --static
+#   rm -f BioDbHTS_INSTALL.pl
+# else
+#   echo "Bio::DB::HTS already installed"
+# fi
 
 cd $INIT_DIR
 
