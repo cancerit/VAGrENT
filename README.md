@@ -15,12 +15,14 @@ as well as Sequence Ontology terms to classify its consequences.
 
 ---
 
-###Dependencies/Install
+### Dependencies/Install
 Some of the code included in this package has dependencies on several packages:
 
  * [Samtools v1.3+](https://github.com/samtools/samtools)
  * [vcftools](https://vcftools.github.io/)
  * [Bio::DB::HTS](http://search.cpan.org/~rishidev/Bio-DB-HTS/)
+ * [bedtools2](http://bedtools.readthedocs.io/en/latest/index.html)
+   * Not >=2.24.0, no upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved (which may involve code changes)
 
 And various perl modules.
 
@@ -30,12 +32,12 @@ Please be aware that this expects basic C compilation libraries and tools to be 
 
 ---
 
-##Creating a release
-####Preparation
+## Creating a release
+#### Preparation
 * Commit/push all relevant changes.
 * Pull a clean version of the repo and use this for the following steps.
 
-####Cutting the release
+#### Cutting the release
 1. Update `lib/Sanger/CGP/Vagrent.pm` to the correct version.
 2. Update `CHANGES.md` to show major items.
 3. Run `./prerelease.sh`
@@ -47,7 +49,7 @@ Please be aware that this expects basic C compilation libraries and tools to be 
 LICENCE
 =======
 
-Copyright (c) 2014-2016 Genome Research Ltd.
+Copyright (c) 2014-2017 Genome Research Ltd.
 
 Author: Cancer Genome Project <cgpit@sanger.ac.uk>
 
