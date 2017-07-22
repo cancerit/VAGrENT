@@ -1,3 +1,11 @@
+### 3.2.2
+* Add bedtools2 to `setup.sh`
+* Added bedtools2 to `README.md`
+* Changes `Bio::DB::HTS`, `samtools` and `HTSlib` install methods.
+* Corrected condition indicating sort is required.
+* Fixes #23 Changed from vcf-sort to normal linux sort to ensure multiple indels with
+same start coord are sorted in a stable way.
+
 ### 3.2.0
 * Allows use of ensemblgenomes.org as a datasource
 * Handle genes without names, and give more useful error message
