@@ -29,7 +29,7 @@ use File::Path qw(rmtree);
 
 my $script_path = "$Bin/../bin";
 
-const my $ANNOT => '%s %s/AnnotateVcf.pl -c %s -i %s -o %s >& /dev/null';
+const my $ANNOT => '%s %s/AnnotateVcf.pl -c %s -i %s -o %s 2>&1 /dev/null';
 
 my $perl = $^X;
 
