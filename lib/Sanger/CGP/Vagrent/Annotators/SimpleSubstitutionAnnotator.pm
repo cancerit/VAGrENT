@@ -2,21 +2,21 @@ package Sanger::CGP::Vagrent::Annotators::SimpleSubstitutionAnnotator;
 
 ##########LICENCE##########
 # Copyright (c) 2014 Genome Research Ltd.
-# 
+#
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
-# 
+#
 # This file is part of VAGrENT.
-# 
+#
 # VAGrENT is free software: you can redistribute it and/or modify it under
 # the terms of the GNU Affero General Public License as published by the Free
 # Software Foundation; either version 3 of the License, or (at your option) any
 # later version.
-# 
+#
 # This program is distributed in the hope that it will be useful, but WITHOUT
 # ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
 # FOR A PARTICULAR PURPOSE. See the GNU Affero General Public License for more
 # details.
-# 
+#
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
@@ -122,7 +122,7 @@ sub _generateAnnotatonGroup {
  	} else {
  		$group->addAnnotation($rAnnot);
  	}
- 	$group->addClassification(@groupClasses);
+ 	$group->addClassification(sort @groupClasses);
  	return $group;
 }
 
@@ -190,7 +190,7 @@ sub _buildRNAAnnotation {
 	}
 
 	if($tran->isProteinCoding){
-    if(($pos > $tran->getCdsMinPos || ($pos == $tran->getCdsMinPos && $offset >= 0)) && 
+    if(($pos > $tran->getCdsMinPos || ($pos == $tran->getCdsMinPos && $offset >= 0)) &&
        ($pos < $tran->getCdsMaxPos || ($pos == $tran->getCdsMaxPos && $offset <= 0))){
 			# coding change
 			push(@groupClasses,$self->getCDSClass);

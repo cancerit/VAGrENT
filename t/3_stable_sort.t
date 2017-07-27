@@ -43,25 +43,54 @@ my $cmd_a = sprintf $ANNOT, $^X, $script_path,
                             "$Bin/../testData/stable.vcf.gz",
                             $tmp_a;
 my $exit_a = system($cmd_a);
-ok(!$exit_a);
+is($exit_a, 0, 'Constructed base comparison VCF');
 
 # the result can be the same, or be different this ensures we get a failure
-for(0..3) {
+for(1..4) {
   my $tmp_b = "$tmpdir/b.vcf";
   my $cmd_b = sprintf $ANNOT, $^X, $script_path,
                               "$Bin/../testData/stable.cache.gz",
                               "$Bin/../testData/stable.vcf.gz",
                               $tmp_b;
   my $exit_b = system($cmd_b);
-  ok(!$exit_b);
+  is($exit_b, 0, 'Constructed comparison VCF No. '.$_);
 
   my $exit_diff = system("diff -I '^#' -I '^#' $tmp_a $tmp_b");
 
   if($exit_diff) {
     BAIL_OUT("Diff found errors see: $tmpdir, you will need to cleanup.");
   }
+  ok('Completed stability iteraction '.$_);
+}
+
+# now check all instances of 'VC=' do not have ':' if they do something got messed up
+my $bad_vc_message = check_vc($tmp_a);
+if($bad_vc_message) {
+  notok($bad_vc_message);
+}
+else {
+  ok(q{All 'VC=' entries successfully summarised.});
 }
 
 rmtree($tmpdir);
 
 done_testing();
+
+sub check_vc {
+  my $in = shift;
+  my $message;
+  open my $FH, '<', $in or die $!;
+  while(my $l = <$FH>) {
+    next if $l =~ m/^#/;
+    chomp $l;
+    my @F = split /\t/, $l;
+    if($F[7] =~ m/VC=([^;]+)/) {
+      my $vc = $1;
+      next if($vc !~ m/:/);
+      $message = 'VC not summarised: '.$vc;
+      last;
+    }
+  }
+  close $FH;
+  return $message;
+}

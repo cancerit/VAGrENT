@@ -79,6 +79,7 @@ sub _getAnnotation {
 sub _generateAnnotatonGroup {
 	my ($self,$var,$tran) = @_;
 	my ($rAnnot,@groupClasses) = $self->_buildRNAAnnotation($var,$tran);
+	@groupClasses = sort @groupClasses;
 	unless(defined($rAnnot)){
 		my $msg = 'No mRNA annotation created';
 		$self->addMessage($msg);
@@ -201,7 +202,7 @@ sub _buildRNAAnnotation {
 	}
 
 	my $tmpGroupClassesHash = $self->_classifyDeletion($tran,$mrnaMin,$mrnaMinOffset,$mrnaMax,$mrnaMaxOffset);
-	push(@groupClasses, sort keys %$tmpGroupClassesHash);
+	push(@groupClasses, keys %$tmpGroupClassesHash);
 	if(scalar(keys %$tmpGroupClassesHash) == 1 && defined($tmpGroupClassesHash->{$self->getIntronClass})){
 		# its intron only
 		return ($self->_buildUnknownMRNAAnnotation($var,$tran,$self->getComplexIndelClass,$self->getIntronVariantClass),@groupClasses);
