@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ##########LICENCE##########
-# Copyright (c) 2014 Genome Research Ltd.
+# Copyright (c) 2018 Genome Research Ltd.
 #
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
 #
@@ -21,7 +21,6 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-
 use strict;
 use English qw(-no_match_vars);
 use warnings FATAL => 'all';
@@ -34,6 +33,7 @@ use lib "$Bin/../lib";
 use Getopt::Long;
 use Pod::Usage;
 use Try::Tiny;
+use Capture::Tiny qw(capture);
 use LWP::Simple;
 use IPC::System::Simple qw(run);
 use Net::FTP;
@@ -46,8 +46,8 @@ use Const::Fast qw(const);
 use Data::Dumper;
 
 const my @ENSMBL_REF_FILE_EXTENTIONS => qw(cdna.all.fa.gz ncrna.fa.gz);
-const my $FASTA_FILTER_SCRIPT => 'Admin_EnsemblTranscriptFastaFilter.pl';
-const my $GTF_CONVERSION_SCRIPT => 'Admin_EnsemblGtf2CacheConverter.pl';
+const my $TRANSCRIPT_FILTER_SCRIPT => 'Admin_EnsemblTranscriptFilter.pl';
+const my $BUILDER_SCRIPT => 'Admin_CacheFileBuilder.pl';
 const my $FILTERED_FASTA_SUFFIX => 'vagrent.fa';
 const my $CACHE_SUFFIX_GZ => 'vagrent.cache.gz';
 const my $CACHE_SUFFIX_RAW => 'vagrent.cache.raw';
@@ -55,95 +55,155 @@ const my @TRANSCRIPT_BIOTYPES => qw(protein_coding lincRNA miRNA snoRNA rRNA snR
 const my $ENSEMBL_SPECIES_ASSEMBLY => qr/([^\.]+?)\.(.+?)\./;
 const my $ENSEMBL_VERSION_PATTERN => qr/^ftp\:\/\/ftp\.ensembl(?:genomes)?\.org\/pub\/release\-(\d+?)\//;
 
+my $tmpDir = tempdir("VagrentEnsemblRefFileGenXXXXX", TMPDIR => 1, CLEANUP => 1);
+
 try {
   my $opts = option_builder();
-	my $urls = getFileUrlsForRetrival($opts);
-
-	print "Downloading Files -------- ";
-	my ($codFasta, $ncFasta, $gtf) = downloadFiles($urls);
+  my ($codFasta, $ncFasta, $features,$transList);
+  
+  print "Downloading Files -------- ";
+  if(defined $opts->{'f'}){
+    my $urls = getFileUrlsForRetrival($opts);
+    ($codFasta, $ncFasta, $features) = downloadFiles($tmpDir, $urls);
+    print "Done\n";
+  } else {
+    $codFasta = $opts->{'cdna_fa'};
+    $ncFasta = $opts->{'ncrna_fa'};
+    $features = $opts->{'features'};
+    print "Skipped, files locally supplied\n";
+  }
+  
+  print "Obtaining Filtered Transcript List ----- ";
+  unless(defined $opts->{'trans_list'}){
+    $transList = generateTranscriptListFile($tmpDir,$features, $codFasta, $ncFasta);
+    print "Done\n";
+  } else {
+    $transList = $opts->{'trans_list'};
+    print "Skipped, files locally supplied\n";
+  }
+  
+  print "Building Cache Files ----- ";
+  buildCacheFiles($tmpDir, $opts, $features, $transList, $codFasta, $ncFasta);
   print "Done\n";
-	# make fasta file of selected cDNA sequences
-	print "Building Fasta Files ----- ";
-	my $fasta = generateFilteredFasta($opts, $codFasta);
-	if(defined $opts->{'n'}){
-		generateFilteredFasta($opts, $ncFasta, $fasta, $opts->{'n'});
-	} else {
-		generateFilteredFasta($opts, $ncFasta, $fasta);
-	}
-	print "Done\n";
-	# Create fai index file
-	print "Building Fasta Index ----- ";
-	my $fai = createFaiIndex($fasta);
-	print "Done\n";
-	# Create transcript object cache file
-	print "Building Vagrent Cache --- ";
-	my $cache = generateCacheFile($opts,$fasta,$gtf,$codFasta);
-	print "Done\n";
+    
 } catch {
   croak "An error occurred while building reference support files\:\n\t$_"; # not $@
 };
 
-sub generateCacheFile{
-	my ($opts,$fasta,$gtf,$codFasta) = @_;
-	my $rawCache = createFilePathFromFasta($opts,$codFasta,$CACHE_SUFFIX_RAW);
-	my $cache = createFilePathFromFasta($opts,$codFasta,$CACHE_SUFFIX_GZ);
-	my $cmd = $^X.' '.getCacheFileScript();
-	$cmd .= " -sp ".$opts->{'sp'};
-	$cmd .= " -as ".$opts->{'as'};
-	$cmd .= " -d ".$opts->{'d'};
-	$cmd .= " -c ".$opts->{'c'} if defined $opts->{'c'};
-	$cmd .= " -f $fasta";
-	$cmd .= " -g $gtf";
-	$cmd .= " -o $rawCache";
-
-	system($cmd) == 0 || croak "unable to create cache file: $rawCache";
-	system("sort -k 1,1 -k 2n,2 -k 3n,3 $rawCache | bgzip > $cache") == 0 || croak "unable to sort and zip cache file: $cache";
-	unlink $rawCache;
-	system("tabix -p bed $cache") == 0 || croak "unable to tabix index cache file: $cache";
-	return $cache;
-}
-
-sub createFaiIndex {
-	my $fa = shift;
-	my $cmd = "samtools faidx $fa";
-	system($cmd) == 0 || croak "unable to index $fa: $?";
-	return $fa.'.fai';
-}
-
-sub generateFilteredFasta {
-	my ($opts, $inFa, $outFa, $statusLookupFile) = @_;
-	my $app = 0;
-	if(defined $outFa){
-		$app = 1;
-	} else {
-		$outFa = createFilePathFromFasta($opts,$inFa,$FILTERED_FASTA_SUFFIX);
-	}
-	my $cmd = $^X.' '.getFastaFilterScript();
-	$cmd .= " -f $inFa";
-	$cmd .= " -o $outFa";
-	$cmd .= ' -b '.join(' -b ',@TRANSCRIPT_BIOTYPES);
-	$cmd .= ' -a' if $app;
-	$cmd .= " -s $statusLookupFile" if defined $statusLookupFile;
-	system($cmd) == 0 || croak "unable to filter $inFa: $?";
-	return $outFa;
-}
-
-sub createFilePathFromFasta {
-	my ($opts, $inFa, $suffix) = @_;
-	my ($vol,$dirs,$file) = File::Spec->splitpath($inFa);
-	my $outFa;
-  if($file =~ m/$ENSEMBL_SPECIES_ASSEMBLY/){
-    $outFa = File::Spec->catfile($opts->{'o'},"$1.$2.".$opts->{'e_version'}.".$suffix");
-  } else {
-    croak("unable to match species and assembly from file name: $inFa");
+sub buildCacheFiles {
+  my ($tmpDir, $opts, $features, $transList, @seq_files) = @_;
+  my $cmd = $^X.' '.getBuilderScript();
+  foreach my $s(@seq_files){
+    $cmd .= " -f $s";
   }
-	return $outFa;
+  $cmd .= ' -o '.$opts->{'o'};
+  $cmd .= " -gf $features";
+  $cmd .= " -t $transList";
+  $cmd .= ' -sp '.$opts->{'sp'};
+  $cmd .= ' -as '.$opts->{'as'};
+  $cmd .= ' -d '.$opts->{'d'};
+  $cmd .= ' -fai '.$opts->{'fai'} if defined $opts->{'fai'};
+  my ($stdout,$stderr,$exit) = capture {system($cmd)};
+  croak('Unable to generate cache files list:- '.$stderr) if $exit;
+  return;
+}
+
+sub getBuilderScript {
+  my $progPath = abs_path($0);
+	my ($vol,$dirs,$file) = File::Spec->splitpath($progPath);
+  return "$dirs".$BUILDER_SCRIPT;
+}
+
+sub generateTranscriptListFile {
+  my ($tmpDir,$features, @seq_files) = @_;
+  my $cmd = $^X.' '.getFilterScript();
+  my $transListFile = makeTmpFilePath($tmpDir,'.translist');
+  foreach my $s(@seq_files){
+    $cmd .= " -f $s";
+  }
+  $cmd .= " -o $transListFile";
+  $cmd .= ' -b '.join(' -b ',@TRANSCRIPT_BIOTYPES);
+  my ($stdout,$stderr,$exit) = capture {system($cmd)};
+  croak('Unable to generate transcript list:- '.$stderr) if $exit;
+  return $transListFile;
+}
+
+sub getFilterScript {
+  my $progPath = abs_path($0);
+	my ($vol,$dirs,$file) = File::Spec->splitpath($progPath);
+  return "$dirs".$TRANSCRIPT_FILTER_SCRIPT;
+}
+
+sub getFileUrlsForRetrival {
+	my $opts = shift;
+	my @out;
+	# ftp://ftp.ensembl.org/pub/release-90/fasta/homo_sapiens/cdna
+	# ftp://ftp.ensembl.org/pub/release-90/fasta/homo_sapiens/ncrna
+	# ftp://ftp.ensembl.org/pub/release-90/gff3/homo_sapiens
+	
+	# ftp://ftp.ensembl.org/pub/release-70/fasta/homo_sapiens/cdna
+	# ftp://ftp.ensembl.org/pub/release-70/fasta/homo_sapiens/ncrna
+	# ftp://ftp.ensembl.org/pub/release-70/gtf/homo_sapiens
+
+	# ftp://ftp.ensembl.org/pub/release-74/fasta/danio_rerio/cdna
+	# ftp://ftp.ensembl.org/pub/release-74/fasta/danio_rerio/ncrna
+	# ftp://ftp.ensembl.org/pub/release-74/gtf/danio_rerio
+
+  $opts->{'f'} =~ s|/$||; # clean training '/' off url
+	my $ncFaDir = $opts->{'f'};
+	$ncFaDir =~ s|/cdna$|/ncrna|;
+	my $gffDir = $opts->{'f'};
+	$gffDir =~ s|/cdna$||;
+	$gffDir =~ s|/fasta/|/gff3/|;
+	my $gtfDir = $opts->{'f'};
+	$gtfDir =~ s|/cdna$||;
+	$gtfDir =~ s|/fasta/|/gtf/|;
+	my $ftp = undef; 
+	foreach my $dir($opts->{'f'}, $ncFaDir, $gffDir, $gtfDir) {
+		my @comps = split /\/+/, $dir;
+  	my $root = shift @comps; # remove ftp:
+  	my $host = shift @comps;
+  	my $path = join '/', @comps;
+  	my $have_feature_file = 0;
+  	unless(defined $ftp){
+  	  $ftp = Net::FTP->new($host, Debug => 0) or croak "Failed to connect (ftp) to $host\n\t$EVAL_ERROR";
+	    $ftp->login or croak "Failed to login (ftp) to $host\n\t", $ftp->message;
+  	}
+  	my @files;
+  	unless(@files = $ftp->ls($path)){
+  	  unless($dir eq $gffDir){ # older ensembl releases don't have a gff directory, can be missing.
+  	    croak "Failed to list directory $path on $host (ftp)\n\t", $ftp->message;
+  	  }
+  	}
+		foreach my $file (@files){
+			foreach my $ext (@ENSMBL_REF_FILE_EXTENTIONS){
+				if($file =~ m/$ext$/){
+					push @out, $dir. '/' . (split '/', $file)[-1];
+				}
+			}
+			if ($dir eq $gffDir && $file =~ m/\.[[:digit:]]+?\.gff3\.gz$/ && $file !~ m/\.[[:digit:]]+?\.(?:chromosome)\..+?\.gff3\.gz$/){
+			  push @out, $dir. '/' . (split '/', $file)[-1];
+			  $have_feature_file = 1;
+			} elsif ($dir eq $gtfDir && $file =~ m/[[:digit:]]\.gtf\.gz$/){
+			  push @out, $dir. '/' . (split '/', $file)[-1]
+			}
+		}
+		last if $have_feature_file;
+	}
+	$ftp->quit;
+	return \@out;
+}
+
+sub makeTmpFilePath {
+  my ($tmpDir,$ext) = @_;
+  my $file;
+  (undef, $file) = tempfile('VagrentEnsemblRefFileGenXXXXX', DIR => $tmpDir, OPEN => 0, SUFFIX => $ext);
+  return $file;
 }
 
 sub downloadFiles {
-	my $urls = shift;
+	my ($tmpDir, $urls) = @_;
 	my @out;
-	my $tmpDir = tempdir("VagrentEnsemblRefFileGenXXXXX", TMPDIR => 1, CLEANUP => 1);
 	foreach my $url(@$urls){
 		my $file = $tmpDir.'/'.(split /\//, $url)[-1];
 		push @out, $file;
@@ -153,76 +213,45 @@ sub downloadFiles {
 	return @out;
 }
 
-sub getFileUrlsForRetrival {
-	my $opts = shift;
-	my @out;
-	# ftp://ftp.ensembl.org/pub/release-74/fasta/homo_sapiens/cdna
-	# ftp://ftp.ensembl.org/pub/release-74/fasta/homo_sapiens/ncrna
-	# ftp://ftp.ensembl.org/pub/release-74/gtf/homo_sapiens
-
-	# ftp://ftp.ensembl.org/pub/release-74/fasta/danio_rerio/cdna
-	# ftp://ftp.ensembl.org/pub/release-74/fasta/danio_rerio/ncrna
-	# ftp://ftp.ensembl.org/pub/release-74/gtf/danio_rerio
-
-	my $ncFaDir = $opts->{'f'};
-	$ncFaDir =~ s|/cdna$|/ncrna|;
-	my $gtfDir = $opts->{'f'};
-	$gtfDir =~ s|/cdna$||;
-	$gtfDir =~ s|/fasta/|/gtf/|;
-	foreach my $dir($opts->{'f'}, $ncFaDir, $gtfDir) {
-		my @comps = split /\/+/, $dir;
-  	my $root = shift @comps; # remove ftp:
-  	my $host = shift @comps;
-  	my $path = join '/', @comps;
-		my $ftp = Net::FTP->new($host, Debug => 0) or croak "Failed to connect (ftp) to $host\n\t$EVAL_ERROR";
-	  $ftp->login or croak "Failed to login (ftp) to $host\n\t", $ftp->message;
-  	my @files = $ftp->ls($path) or croak "Failed to list directory $path on $host (ftp)\n\t", $ftp->message;
-  	$ftp->quit;
-		foreach my $file (@files){
-			foreach my $ext (@ENSMBL_REF_FILE_EXTENTIONS){
-				if($file =~ m/$ext$/){
-					push @out, $dir. '/' . (split '/', $file)[-1];
-				}
-			}
-			push @out, $dir. '/' . (split '/', $file)[-1] if($file =~ m/[[:digit:]]\.gtf\.gz$/);
-		}
-	}
-	return \@out;
-}
-
-sub getFastaFilterScript {
-	my $progPath = abs_path($0);
-	my ($vol,$dirs,$file) = File::Spec->splitpath($progPath);
-  return "$dirs".$FASTA_FILTER_SCRIPT;
-}
-
-sub getCacheFileScript {
-	my $progPath = abs_path($0);
-	my ($vol,$dirs,$file) = File::Spec->splitpath($progPath);
-	my $mods = $dirs;
-	$mods =~ s|bin/$|lib|;
-  return "-I $mods $dirs".$GTF_CONVERSION_SCRIPT;
-}
-
 sub option_builder {
 	my ($factory) = @_;
 	my %opts = ();
 	my $result = &GetOptions (
 		'h|help' => \$opts{'h'},
 		'f|ftp=s' => \$opts{'f'},
+		'gf|features=s' => \$opts{'features'},
+		'cf|cdna_fa=s' => \$opts{'cdna_fa'},
+		'nf|ncrna_fa=s' => \$opts{'ncrna_fa'},
 		'o|output=s' => \$opts{'o'},
-		'n|ncstatus=s' => \$opts{'n'},
+		'tl|trans_list=s' => \$opts{'trans_list'},
 		'sp|species=s' => \$opts{'sp'},
 		'as|assembly=s' => \$opts{'as'},
 		'd|database=s' => \$opts{'d'},
 		'c|ccds=s' => \$opts{'c'},
+		'fai|fai=s' => \$opts{'fai'},
   );
   pod2usage() if($opts{'h'});
   pod2usage('Must specify the output directory to use') unless(defined $opts{'o'});
   pod2usage("Output directory must exist and be writable: $opts{o}") unless(-e $opts{'o'} && -d $opts{'o'} && -w $opts{'o'});
-  pod2usage('Must specify the cDNA path for the ensembl reference data') unless defined $opts{'f'} && $opts{'f'} =~ m|cdna/?$|;
-  if(defined($opts{'n'})){
-  	pod2usage('Unable to read the non-coding transcript status file') unless -e $opts{'n'} && -r $opts{'n'};
+  
+  if(defined $opts{'f'}){
+    if(defined $opts{'features'} || defined $opts{'cdna_fa'} || defined $opts{'ncrna_fa'}){
+      pod2usage('Please only define the remote URL or the local files, not both');
+    } else {
+      pod2usage('Must specify the cDNA URL for the ensembl reference data') unless($opts{'f'} =~ m|cdna/?$|);
+    }
+  } elsif (defined $opts{'cdna_fa'} && defined $opts{'ncrna_fa'} && defined $opts{'features'}){
+    if(defined $opts{'f'}){
+      pod2usage('Please only define the remote URL or the local files, not both');
+    } else {
+      pod2usage('Please specify a valid genomic feature file (-gff)') unless -e $opts{'features'} && -r $opts{'features'};
+      pod2usage('Please specify a valid coding cDNA sequence file (-cf)') unless -e $opts{'cdna_fa'} && -r $opts{'cdna_fa'};
+      pod2usage('Please specify a valid non-coding cDNA sequence file (-nf)') unless -e $opts{'ncrna_fa'} && -r $opts{'ncrna_fa'};
+    }
+  
+  }
+  if(defined($opts{'fai'})){
+  	pod2usage('Unable to read the fai file: '.$opts{'fai'}) unless -e $opts{'fai'} && -r $opts{'fai'};
   }
   pod2usage('Must specify the species') unless defined $opts{'sp'};
   pod2usage('Must specify the genome version') unless defined $opts{'as'};
@@ -230,13 +259,9 @@ sub option_builder {
   if(defined($opts{'c'})){
   	pod2usage('CCDS file unreadable') unless -e $opts{'c'} && -r $opts{'c'};
   }
-  $opts{'f'} =~ s|/$||;
-  if($opts{'f'} =~ m/$ENSEMBL_VERSION_PATTERN/){
-    $opts{'e_version'} = $1;
-  } else {
-    pod2usage('Unable to parse Ensembl version from URL');
+  if(defined($opts{'trans_list'})){
+  	pod2usage('Transcript file unreadable') unless -e $opts{'trans_list'} && -r $opts{'trans_list'};
   }
-
   return \%opts;
 }
 
@@ -250,15 +275,9 @@ Admin_EnsemblReferenceFileGenerator.pl - Generates the Vagrent reference files f
 
 Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapiens_core_74_37p] [-f <ftp://ftp.ensembl.org/pub/release-XX/fasta/XXX_XXX/cdna/>] [-c /path/to/CCDS2Sequence.version.txt] [-o /path/to/output/directory]
 
-  General Options:
+  Required Options:
 
-    --help         (-h)     Brief documentation
-
-    --ftp          (-f)     Ensembl ftp directory containing the cDNA fasta sequence files
-
-    --output       (-o)     Output directory
-
-    --ncstatus     (-n)     Optional, path to a lookup file for the status of non-coding transcripts
+    --output       (-o)     Output directory    
 
     --species      (-sp)    Species (ie human, mouse)
 
@@ -266,6 +285,27 @@ Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapi
 
     --database     (-d)     Ensembl core database version number (ie homo_sapiens_core_74_37p)
 
-    --ccds         (-c)     (Optional, but strongly advised) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS
+  Dynamic Download:
+  
+    --ftp          (-f)     Ensembl ftp directory containing the cDNA fasta sequence files
 
+  Or Local Files:
+  
+    --features     (-gf)     gff3 or gtf file to extract transcript and gene information
+  
+    --cdna_fa      (-cf)    Fasta file containing protein coding cdna sequences
+  
+    --ncrna_fa     (-nf)    Fasta file containing non-coding cdna sequences 
+
+  Optional:
+  
+    --help         (-h)     Brief documentation
+        
+    --ccds         (-c)     (Recommended) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS
+    
+    --fai          (-fai)   (Recommended) The samtools fasts index file (.fai) for your reference genome
+                              This is the reference genome that your bam and vcf files will be mapped to
+    
+    --trans_list   (-tl)    List of preprepared transcript accessions, only these accesions will be included in the reference output
+    
 =cut
