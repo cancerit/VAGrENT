@@ -162,9 +162,9 @@ sub processFeatureFile {
       $current_chr = $chr;
       $current_chr_translation = checkChromosome($current_chr,$chrList);
       if (!defined $current_chr_translation){
-        print "Sequence $current_chr not found in fai file: no alternative found, skipping\n";
+        print "Sequence $current_chr not found in fai file: no alternative found, skipping\n" if $opts->{'debug'};
       } elsif ($current_chr ne $current_chr_translation){
-        print "Sequence $current_chr not found in fai file: using $current_chr_translation as alternative\n";
+        print "Sequence $current_chr not found in fai file: using $current_chr_translation as alternative\n" if $opts->{'debug'};
       }
     }
     next if $current_chr eq $chr && !defined $current_chr_translation;
@@ -206,9 +206,9 @@ sub processFeatureFile {
       $current_chr = $chr;
       $current_chr_translation = checkChromosome($current_chr,$chrList);
       if (!defined $current_chr_translation){
-        print "Sequence $current_chr not found in fai file: no alternative found, skipping\n";
+        print "Sequence $current_chr not found in fai file: no alternative found, skipping\n" if $opts->{'debug'};
       } elsif ($current_chr ne $current_chr_translation){
-        print "Sequence $current_chr not found in fai file: using $current_chr_translation as alternative\n";
+        print "Sequence $current_chr not found in fai file: using $current_chr_translation as alternative\n" if $opts->{'debug'};
       }
       next if !defined $current_chr_translation;
     }  
@@ -236,15 +236,12 @@ sub writeOutput {
   my ($trans,$cache,$fa) = @_;
   my $seq = Bio::Seq->new(-display_id => $trans->getAccession(),-seq => $trans->getcDNASeq);
   my ($e) = $trans->getExons();
-  
-  #my $cache_row = join("\t",$e->getChr,$trans->getGenomicMinPos - 1,$trans->getGenomicMaxPos,$trans->getAccession,$trans->getGeneName,length $trans->getcDNASeq);
   my $cache_row;
   try{
     $cache_row = join("\t",$e->getChr,$trans->getGenomicMinPos - 1,$trans->getGenomicMaxPos,$trans->getAccession,$trans->getGeneName,length $trans->getcDNASeq);
   } catch {
-    croak(Dumper($trans));
+    croak('An error occured outputting transcript '.$trans->getAccession.', please check input data');
   };
-  
   $trans->{_cdnaseq} = undef;
   $cache_row .= "\t".Dumper($trans)."\n";
   
@@ -264,7 +261,7 @@ sub processCompleteTranscripts {
 
 sub convertTranscript {
   my ($opts,$raw_transcript,$transcript_id,$gene_names,$ccdsList,$seqFiles,$chr) = @_;
-  my $type = getGeneTypeForTranscript($raw_transcript);
+  my $type = getGeneTypeForTranscript($opts,$raw_transcript);
   return undef unless defined $type;
   my $rnaLengthSum = 0;
   my $strand = undef;
@@ -324,7 +321,7 @@ sub convertTranscript {
   }
   my ($protAcc,$protAccVer,$cdsMin,$cdsMax,$cdsPhase,$ccds);
   if($type eq Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType()){
-    ($cdsMin,$cdsMax,$cdsPhase) = calculateCDS(\@raw_cds,\@raw_exons, $rnaLengthSum, $strand,$transcript_id);
+    ($cdsMin,$cdsMax,$cdsPhase) = calculateCDS($opts,\@raw_cds,\@raw_exons, $rnaLengthSum, $strand,$transcript_id);
     return undef unless(defined $cdsMin && defined $cdsMax && defined $cdsPhase);
     $ccds = getCCDS($raw_transcript,$transcript_id,$ccdsList);
     foreach my $cds(@raw_cds){
@@ -394,14 +391,11 @@ sub getCCDS {
     foreach my $tag(@TAG_CCDS){
       if($feat->has_tag($tag)){
         ($ccds) = $feat->get_tag_values($tag);
-        #warn "$transcript_id - $tag - $ccds";
         last;
       }
     }
     last if defined $ccds;
   }
-  #croak($transcript_id,' - ',$ccds) if $transcript_id eq 'ENST00000310441';
-  
   unless(defined $ccds){
     if(defined $ccdsList){
       if(exists $ccdsList->{$transcript_id}){
@@ -413,7 +407,7 @@ sub getCCDS {
 }
 
 sub calculateCDS {
-  my ($feats,$exons,$rnaLength, $strand,$transcript_id) = @_;
+  my ($opts,$feats,$exons,$rnaLength, $strand,$transcript_id) = @_;
   my $utr5Length = 0;
   my $cdsLength = 0;
   my $utr3Length = 0;
@@ -442,7 +436,7 @@ sub calculateCDS {
   my $mess = '';
   
   foreach my $e(@$exons){
-    croak(Dumper($exons)) unless defined($e);
+    croak('Recieved undefined exon: '.Dumper($exons)) unless defined($e);
     # remember start = min, end = max.  start and end DO NOT infer orientation in BIOPERL
     if($strand > 0){
       # forward strand start = min = start of feature, end = max = end of feature
@@ -474,16 +468,16 @@ sub calculateCDS {
         # exon starts after the CDS ends
         $utr3Length_e += $e->length;
       } else {
-        print "\n",join(' - ',$utr5Length,$cdsLength,$stopCodonLength,$utr3Length),"\n";
-        print join(' - ',$utr5Length_e,$cdsLength_e,0,$utr3Length_e),"\n";
-        print "\n";
-        foreach (@cds){print "CDS : ",Dumper($_),"\n"};
-        print "\n";
-        foreach (@$exons){print "EXON : ",Dumper($_),"\n"};
-        print "\n";
-        foreach ($cds_first,$cds_last){print "CDS BOUNDRIES : ",Dumper($_),"\n"};   
-        print "\n";
-        print "PROC : ",Dumper($e),"\n";     
+        warn "\n",join(' - ',$utr5Length,$cdsLength,$stopCodonLength,$utr3Length),"\n";
+        warn join(' - ',$utr5Length_e,$cdsLength_e,0,$utr3Length_e),"\n";
+        warn "\n";
+        foreach (@cds){warn "CDS : ",Dumper($_),"\n"};
+        warn "\n";
+        foreach (@$exons){warn "EXON : ",Dumper($_),"\n"};
+        warn "\n";
+        foreach ($cds_first,$cds_last){warn "CDS BOUNDRIES : ",Dumper($_),"\n"};   
+        warn "\n";
+        warn "PROC : ",Dumper($e),"\n";
         croak('unhandled exon');
       }
       
@@ -518,29 +512,21 @@ sub calculateCDS {
         # exons starts (end) after CDS ends (start)
         $utr3Length_e += $e->length;
       } else {
-        print "\n",join(' - ',$utr5Length,$cdsLength,$stopCodonLength,$utr3Length),"\n";
-        print join(' - ',$utr5Length_e,$cdsLength_e,0,$utr3Length_e),"\n";
-        
-        print "\n";
-        foreach (@cds){print "CDS : ",Dumper($_),"\n"};
-        print "\n";
-        foreach (@$exons){print "EXON : ",Dumper($_),"\n"};
-        print "\n";
-        foreach ($cds_first,$cds_last){print "CDS BOUNDRIES : ",Dumper($_),"\n"};
-        print "\n";
-        print "PROC : ",Dumper($e),"\n";
+        warn "\n",join(' - ',$utr5Length,$cdsLength,$stopCodonLength,$utr3Length),"\n";
+        warn join(' - ',$utr5Length_e,$cdsLength_e,0,$utr3Length_e),"\n";
+        warn "\n";
+        foreach (@cds){warn "CDS : ",Dumper($_),"\n"};
+        warn "\n";
+        foreach (@$exons){warn "EXON : ",Dumper($_),"\n"};
+        warn "\n";
+        foreach ($cds_first,$cds_last){warn "CDS BOUNDRIES : ",Dumper($_),"\n"};   
+        warn "\n";
+        warn "PROC : ",Dumper($e),"\n";
         croak('unhandled exon');
       }
     } else {
       croak('Cannot process strand: ',$strand);
     }
-    
-     my ($eid) = $e->get_tag_values('exon_id');
-     if($eid eq 'ENST00000569669'){
-       #$break = 1;
-     }
-     
-     #$break = 1 if($transcript_id eq 'ENST00000565816');
   }
   
   # length calculation double check
@@ -551,20 +537,6 @@ sub calculateCDS {
   } else {
     # only compare the CDS length, skip if data is inconsistant
     return (undef,undef,undef) unless($cdsLength == $cdsLength_e);
-  }
-  
-  if($break){
-    print "\n",join(' - ',$utr5Length,$cdsLength,$stopCodonLength,$utr3Length),"\n";
-    print join(' - ',$utr5Length_e,$cdsLength_e,0,$utr3Length_e),"\n";
-
-    print "\n";
-    foreach (@cds){print "CDS : ",Dumper($_),"\n"};
-    print "\n";
-    foreach (@$exons){print "EXON : ",Dumper($_),"\n"};
-    print "\n";
-    foreach ($cds_first,$cds_last){print "CDS BOUNDRIES : ",Dumper($_),"\n"}; 
-
-    croak($break);  
   }
   
   my $cds_min = $utr5Length_e + 1;
@@ -583,7 +555,7 @@ sub calculateCDS {
 }
 
 sub getGeneTypeForTranscript {
-  my $t = shift;
+  my ($opts,$t) = shift;
   
   my $type = undef;
   my $type_tag = undef;
@@ -620,8 +592,10 @@ sub getGeneTypeForTranscript {
 	    # If they are only reporting the gene biotype and its not one we can handle we have to skip the transcript.
 	    return undef;
 	  } else {
-      foreach (@$t){
-        print Dumper($_),"\n";
+	    if($opts->{'debug'}){
+        foreach (@$t){
+          warn Dumper($_),"\n";
+        }
       }
       croak("Unhandled biotype: $type");
 	  }
@@ -811,6 +785,7 @@ sub option_builder {
 		'd|database=s' => \$opts{'d'},
 		'c|ccds=s' => \$opts{'c'},
 		'fai|fai=s' => \$opts{'fai'},
+		'debug|debug' => \$opts{'debug'},
   );
 
   pod2usage() if($opts{'h'});
@@ -873,4 +848,6 @@ Admin_CacheFileBuilder.pl [-h] [-f /path/to/sequence.fa] [-gff /path/to/annotati
     
     --fai          (-fai)   (Recommended) The samtools fasts index file (.fai) for your reference genome
                               This is the reference genome that your bam and vcf files will be mapped to
+                              
+    --debug        (-debug) This turns on the debug output, useful if you are having issues with a specific Ensembl build                  
 =cut

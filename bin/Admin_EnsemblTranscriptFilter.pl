@@ -79,10 +79,11 @@ sub getTranscripts {
     foreach my $rec (split /\n/,$stdout){
       my ($transcript,$biotype) = parseLine($rec);
       next unless hasGoodBiotype($opts,$biotype);
-      # have to store the transcript accessions twice, with and without the version
-      # depending on the Ensembl version or species, the accession in the fasta file may 
+      # Have to store the transcript accessions twice, with and without the version.
+      # Depending on the Ensembl version or species, the accession in the fasta file may 
       # or may not have the transcript version on the end.
-      # some species gff/gtf files include the the version in the accession, some don't
+      # Some species gff/gtf files include the the version in the accession, some don't
+      # Ensembl versions with imported gene build will preserve the originators naming conventions
       push(@$good_transcripts,$transcript);
       $transcript =~ s/\.\d+?$//;
       push(@$good_transcripts,$transcript);      

@@ -273,7 +273,7 @@ Admin_EnsemblReferenceFileGenerator.pl - Generates the Vagrent reference files f
 
 =head1 SYNOPSIS
 
-Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapiens_core_74_37p] [-f <ftp://ftp.ensembl.org/pub/release-XX/fasta/XXX_XXX/cdna/>] [-c /path/to/CCDS2Sequence.version.txt] [-o /path/to/output/directory]
+Admin_EnsemblReferenceFileGenerator.pl [-h] [-sp Human] [-as GRCh37] [-d homo_sapiens_core_74_37p] [-f <ftp://ftp.ensembl.org/pub/release-XX/fasta/XXX_XXX/cdna/>] [-o /path/to/output/directory]
 
   Required Options:
 
@@ -291,7 +291,7 @@ Admin_EnsemblReferenceFileGenerator.pl [-h] [-s human] [-v GRCh37] [-d homo_sapi
 
   Or Local Files:
   
-    --features     (-gf)     gff3 or gtf file to extract transcript and gene information
+    --features     (-gf)    gff3 or gtf file containing transcript and gene information
   
     --cdna_fa      (-cf)    Fasta file containing protein coding cdna sequences
   
