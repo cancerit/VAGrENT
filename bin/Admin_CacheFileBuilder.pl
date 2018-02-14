@@ -573,7 +573,7 @@ sub getGeneTypeForTranscript {
       }
     }
   }
-
+  return undef unless defined $type; # no biotype found in transcript data, must skip
   if($type eq 'protein_coding'){
 		return Sanger::CGP::Vagrent::Data::Transcript::getProteinCodingType();
 	} elsif($type eq 'miRNA'){
