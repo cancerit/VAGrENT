@@ -31,9 +31,9 @@ WriteMakefile(
   NAME          => 'Vagrent',
   LICENSE       => 'agpl_3', # http://search.cpan.org/~dagolden/CPAN-Meta-2.142690/lib/CPAN/Meta/Spec.pm#license
   VERSION_FROM  => 'lib/Sanger/CGP/Vagrent.pm',
-  EXE_FILES     => [qw( bin/Admin_EnsemblGtf2CacheConverter.pl
+  EXE_FILES     => [qw( bin/Admin_CacheFileBuilder.pl
                         bin/Admin_EnsemblReferenceFileGenerator.pl
-                        bin/Admin_EnsemblTranscriptFastaFilter.pl
+                        bin/Admin_EnsemblTranscriptFilter.pl
                         bin/Admin_GeneRegionBedDumper.pl
                         bin/AnnotateVcf.pl)],
   PREREQ_PM     => {
