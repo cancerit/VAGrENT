@@ -1,3 +1,6 @@
+### 3.3.0
+* Complete re-write of the reference generation code
+
 ### 3.2.2
 * Add bedtools2 to `setup.sh`
 * Added bedtools2 to `README.md`

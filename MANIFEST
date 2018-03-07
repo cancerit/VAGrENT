@@ -1,7 +1,7 @@
 .travis.yml
-bin/Admin_EnsemblGtf2CacheConverter.pl
+bin/Admin_CacheFileBuilder.pl
 bin/Admin_EnsemblReferenceFileGenerator.pl
-bin/Admin_EnsemblTranscriptFastaFilter.pl
+bin/Admin_EnsemblTranscriptFilter.pl
 bin/Admin_GeneRegionBedDumper.pl
 bin/AnnotateVcf.pl
 bin/cpanm
