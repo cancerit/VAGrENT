@@ -23,7 +23,7 @@
 
 SOURCE_SAMTOOLS="https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2"
 SOURCE_HTSLIB="https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2"
-SOURCE_BIOBDHTS="https://github.com/Ensembl/Bio-HTS/archive/2.9.tar.gz"
+SOURCE_BIOBDHTS="https://github.com/Ensembl/Bio-HTS/archive/2.10.tar.gz"
 SOURCE_VCFTOOLS="https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz"
 # Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
 # No upgrades until [this ticket](https://github.com/arq5x/bedtools2/issues/319) is resolved
@@ -119,16 +119,20 @@ cd $SETUP_DIR
 
 ## grab cpanm and stick in workspace, then do a self upgrade into bin:
 get_file $SETUP_DIR/cpanm https://cpanmin.us/
-perl $SETUP_DIR/cpanm -l $INST_PATH App::cpanminus
+perl $SETUP_DIR/cpanm --no-wget -l $INST_PATH App::cpanminus
 CPANM=`which cpanm`
 echo $CPANM
 
-perlmods=( "File::ShareDir" "File::ShareDir::Install" "Module::Build" "Bio::Root::Version@1.006924")
-
-for i in "${perlmods[@]}" ; do
-  echo -n "Installing build prerequisite $i..."
-  $CPANM --notest --mirror http://cpan.metacpan.org -l $INST_PATH $i
-done
+if [ -e $SETUP_DIR/basePerlDeps.success ]; then
+  echo "Previously installed base perl deps..."
+else
+  perlmods=( "File::ShareDir" "File::ShareDir::Install" "Module::Build" "Bio::Root::Version@1.006924")
+  for i in "${perlmods[@]}" ; do
+    echo -n "Installing build prerequisite $i..."
+    $CPANM --no-wget --no-interactive --notest --mirror http://cpan.metacpan.org -l $INST_PATH $i
+  done
+  touch $SETUP_DIR/basePerlDeps.success
+fi
 
 echo -n "Building bedtools2 ..."
 if [ -e $SETUP_DIR/bedtools.success ]; then
@@ -162,7 +166,6 @@ else
   touch $SETUP_DIR/$CURR_TOOL.success
 fi
 
-
 echo -n "Get htslib ..."
 if [ -e $SETUP_DIR/htslibGet.success ]; then
   echo " already staged ...";
@@ -190,6 +193,27 @@ fi
 
 export HTSLIB=$INST_PATH
 
+cd $INIT_DIR
+
+echo -n "Building samtools ..."
+if [ -e $SETUP_DIR/samtools.success ]; then
+  echo " previously installed ...";
+else
+echo
+  cd $SETUP_DIR
+  rm -rf samtools
+  get_distro "samtools" $SOURCE_SAMTOOLS
+  mkdir -p samtools
+  tar --strip-components 1 -C samtools -xjf samtools.tar.bz2
+  cd samtools
+  ./configure --enable-plugins --enable-libcurl --with-htslib=$HTSLIB --prefix=$INST_PATH
+  make -j$CPU all
+  make install
+  cd $SETUP_DIR
+  rm -f samtools.tar.bz2
+  touch $SETUP_DIR/samtools.success
+fi
+
 CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Bio::DB::HTS`
 if [[ "x$CHK" == "x" ]] ; then
   echo -n "Building Bio::DB::HTS ..."
@@ -213,24 +237,6 @@ if [[ "x$CHK" == "x" ]] ; then
   fi
 else
   echo "Bio::DB::HTS already installed ..."
-fi
-
-if [ -e $SETUP_DIR/samtools.success ]; then
-  echo " previously installed ...";
-else
-echo
-  cd $SETUP_DIR
-  rm -rf samtools
-  get_distro "samtools" $SOURCE_SAMTOOLS
-  mkdir -p samtools
-  tar --strip-components 1 -C samtools -xjf samtools.tar.bz2
-  cd samtools
-  ./configure --enable-plugins --enable-libcurl --with-htslib=$HTSLIB --prefix=$INST_PATH
-  make -j$CPU all
-  make install
-  cd $SETUP_DIR
-  rm -f samtools.tar.bz2
-  touch $SETUP_DIR/samtools.success
 fi
 
 cd $INIT_DIR
