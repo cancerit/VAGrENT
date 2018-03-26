@@ -21,8 +21,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-SOURCE_SAMTOOLS="https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.7.tar.bz2"
-SOURCE_HTSLIB="https://github.com/samtools/htslib/releases/download/1.3.2/htslib-1.7.tar.bz2"
+SOURCE_SAMTOOLS="https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2"
+SOURCE_HTSLIB="https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2"
 SOURCE_BIOBDHTS="https://github.com/Ensembl/Bio-HTS/archive/2.10.tar.gz"
 SOURCE_VCFTOOLS="https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz"
 # Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed

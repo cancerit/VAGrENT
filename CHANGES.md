@@ -1,5 +1,8 @@
 # CHANGES
 
+## 3.3.2
+* Actually get the new `htslib` and `samtools` links correct in `setup.sh`
+
 ## 3.3.1
 * `samtools` and `htslib` updated to 1.7
 * `Bio::DB::HTS` updated to 2.10, fixes error with GRCh38 contig names in Tabix.
