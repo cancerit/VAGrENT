@@ -128,7 +128,7 @@ sub _getTranscriptsFromCache {
   } else {
     $min = ($gp->getMinPos - $SEARCH_BUFFER);
   }
-  my $iter = $self->{_cache_tbx}->query(sprintf '%s:%d-%d', $gp->getChr(),$min,$max);
+  my $iter = $self->{_cache_tbx}->query_full($gp->getChr(),$min,$max);
   return undef unless defined $iter;
   my $out = undef;
   while(my $ret = $iter->next){
