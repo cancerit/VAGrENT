@@ -21,8 +21,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-SOURCE_SAMTOOLS="https://github.com/samtools/samtools/releases/download/1.3.1/samtools-1.7.tar.bz2"
-SOURCE_HTSLIB="https://github.com/samtools/htslib/releases/download/1.3.2/htslib-1.7.tar.bz2"
+SOURCE_SAMTOOLS="https://github.com/samtools/htslib/releases/download/1.7/htslib-1.7.tar.bz2"
+SOURCE_HTSLIB="https://github.com/samtools/samtools/releases/download/1.7/samtools-1.7.tar.bz2"
 SOURCE_BIOBDHTS="https://github.com/Ensembl/Bio-HTS/archive/2.10.tar.gz"
 SOURCE_VCFTOOLS="https://github.com/vcftools/vcftools/releases/download/v0.1.14/vcftools-0.1.14.tar.gz"
 # Warning bedtools 2.24.0 and 2.25.0 have a swapped usage in coverageBed
@@ -119,16 +119,20 @@ cd $SETUP_DIR
 
 ## grab cpanm and stick in workspace, then do a self upgrade into bin:
 get_file $SETUP_DIR/cpanm https://cpanmin.us/
-perl $SETUP_DIR/cpanm -l $INST_PATH App::cpanminus
+perl $SETUP_DIR/cpanm --no-wget -l $INST_PATH App::cpanminus
 CPANM=`which cpanm`
 echo $CPANM
 
-perlmods=( "File::ShareDir" "File::ShareDir::Install" "Module::Build" "Bio::Root::Version@1.006924")
-
-for i in "${perlmods[@]}" ; do
-  echo -n "Installing build prerequisite $i..."
-  $CPANM --notest --mirror http://cpan.metacpan.org -l $INST_PATH $i
-done
+if [ -e $SETUP_DIR/basePerlDeps.success ]; then
+  echo "Previously installed base perl deps..."
+else
+  perlmods=( "File::ShareDir" "File::ShareDir::Install" "Module::Build" "Bio::Root::Version@1.006924")
+  for i in "${perlmods[@]}" ; do
+    echo -n "Installing build prerequisite $i..."
+    $CPANM --no-wget --no-interactive --notest --mirror http://cpan.metacpan.org -l $INST_PATH $i
+  done
+  touch $SETUP_DIR/basePerlDeps.success
+fi
 
 echo -n "Building bedtools2 ..."
 if [ -e $SETUP_DIR/bedtools.success ]; then
@@ -162,6 +166,7 @@ else
   touch $SETUP_DIR/$CURR_TOOL.success
 fi
 
+echo -n "Get htslib ..."
 if [ -e $SETUP_DIR/htslibGet.success ]; then
   echo " already staged ...";
 else
@@ -188,29 +193,9 @@ fi
 
 export HTSLIB=$INST_PATH
 
-CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Bio::DB::HTS`
-if [[ "x$CHK" == "x" ]] ; then
-  echo -n "Building Bio::DB::HTS ..."
-  if [ -e $SETUP_DIR/biohts.success ]; then
-    echo " previously installed ...";
-  else
-    echo
-    cd $SETUP_DIR
-    rm -rf bioDbHts
-    get_distro "bioDbHts" $SOURCE_BIOBDHTS
-    tar --strip-components 1 -C bioDbHts -zxf bioDbHts.tar.gz
-    cd bioDbHts
-    perl Build.PL --install_base=$INST_PATH --htslib=$INST_PATH
-    ./Build test
-    ./Build install
-    cd $SETUP_DIR
-    rm -f bioDbHts.tar.gz
-    touch $SETUP_DIR/biohts.success
-  fi
-else
-  echo "Bio::DB::HTS already installed ..."
-fi
+cd $INIT_DIR
 
+echo -n "Building samtools ..."
 if [ -e $SETUP_DIR/samtools.success ]; then
   echo " previously installed ...";
 else
@@ -227,6 +212,31 @@ echo
   cd $SETUP_DIR
   rm -f samtools.tar.bz2
   touch $SETUP_DIR/samtools.success
+fi
+
+CHK=`perl -le 'eval "require $ARGV[0]" and print $ARGV[0]->VERSION' Bio::DB::HTS`
+if [[ "x$CHK" == "x" ]] ; then
+  echo -n "Building Bio::DB::HTS ..."
+  if [ -e $SETUP_DIR/biohts.success ]; then
+    echo " previously installed ...";
+  else
+    echo
+    cd $SETUP_DIR
+    rm -rf bioDbHts
+    get_distro "bioDbHts" $SOURCE_BIOBDHTS
+    mkdir -p bioDbHts
+    tar --strip-components 1 -C bioDbHts -zxf bioDbHts.tar.gz
+    cd bioDbHts
+    perl Build.PL --htslib=$HTSLIB --install_base=$INST_PATH
+    ./Build
+    ./Build test
+    ./Build install
+    cd $SETUP_DIR
+    rm -f bioDbHts.tar.gz
+    touch $SETUP_DIR/biohts.success
+  fi
+else
+  echo "Bio::DB::HTS already installed ..."
 fi
 
 cd $INIT_DIR
