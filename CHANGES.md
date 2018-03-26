@@ -3,6 +3,7 @@
 ## 3.3.2
 
 * Actually get the new `htslib` and `samtools` links correct in `setup.sh`
+* Move `samtools` install in `setup.sh` to happen before `Bio::DB::HTS`
 
 ## 3.3.1
 
