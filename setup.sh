@@ -198,9 +198,11 @@ if [[ "x$CHK" == "x" ]] ; then
     cd $SETUP_DIR
     rm -rf bioDbHts
     get_distro "bioDbHts" $SOURCE_BIOBDHTS
+    mkdir -p bioDbHts
     tar --strip-components 1 -C bioDbHts -zxf bioDbHts.tar.gz
     cd bioDbHts
-    perl Build.PL --install_base=$INST_PATH --htslib=$INST_PATH
+    perl Build.PL --htslib=$HTSLIB --install_base=$INST_PATH
+    ./Build
     ./Build test
     ./Build install
     cd $SETUP_DIR
