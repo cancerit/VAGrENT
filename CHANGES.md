@@ -1,5 +1,9 @@
 # CHANGES
 
+## 3.3.3
+
+* fixing issue in Admin_CacheFileBuilder.pl where it would fail without the optional fai file 
+
 ## 3.3.2
 
 * Actually get the new `htslib` and `samtools` links correct in `setup.sh`
