@@ -620,7 +620,9 @@ sub featureOrderSortFunction {
 sub checkChromosome {
   my ($chr,$chrList) = @_;
   my $use_chr = undef;
-  if(first { $_ eq $chr } @$chrList){
+  if(!defined $chrList){
+    $use_chr = $chr;
+  } elsif (first { $_ eq $chr } @$chrList){
     $use_chr = $chr;
   } else {
     # chromosome not in fai file
