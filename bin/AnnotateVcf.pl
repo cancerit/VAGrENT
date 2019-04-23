@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 ##########LICENCE##########
-# Copyright (c) 2014-2017 Genome Research Ltd.
+# Copyright (c) 2014-2019 Genome Research Ltd.
 #
 # Author: Cancer Genome Project cgpit@sanger.ac.uk
 #
@@ -36,6 +36,7 @@ use List::Util qw(first);
 use File::Temp qw(tempfile);
 use File::Copy qw(copy);
 use Try::Tiny qw(try catch);
+use File::Basename qw(fileparse);
 
 use FindBin qw($Bin);
 use lib "$Bin/../lib";
@@ -95,7 +96,9 @@ eval {
   }
   my $output = $options->{'output'};
   if($options->{'tabix'}){
-    (undef,$output) = tempfile('vagrentXXXXXXX', OPEN => 0, SUFFIX => '.vcf');
+    my $outdir;
+    (undef, $outdir, undef) = fileparse($output);
+    (undef,$output) = tempfile($outdir.'vagrentXXXXXXX', OPEN => 0, SUFFIX => '.vcf');
   }
 
   open my $OUT_FH, '>', $output or croak 'Failed to create: '.$output;

@@ -49,7 +49,7 @@ Please be aware that this expects basic C compilation libraries and tools to be 
 LICENCE
 =======
 
-Copyright (c) 2014-2018 Genome Research Ltd.
+Copyright (c) 2014-2019 Genome Research Ltd.
 
 Author: CASM/Cancer IT <cgphelp@sanger.ac.uk>
 
