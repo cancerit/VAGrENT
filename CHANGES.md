@@ -1,8 +1,12 @@
 # CHANGES
 
+## 3.3.4
+
+* Don't assume working directory is writable (fixes #33)
+
 ## 3.3.3
 
-* fixing issue in Admin_CacheFileBuilder.pl where it would fail without the optional fai file 
+* fixing issue in Admin_CacheFileBuilder.pl where it would fail without the optional fai file
 
 ## 3.3.2
 
