@@ -1,5 +1,9 @@
 # CHANGES
 
+## 3.3.5
+
+* fixing pipefail issue for non-bash environments, splitting command into 2 separate executions.
+
 ## 3.3.4
 
 * Don't assume working directory is writable (fixes #33)
