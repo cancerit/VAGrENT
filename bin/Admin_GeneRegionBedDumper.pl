@@ -119,10 +119,15 @@ eval {
     croak("unable to remove $sortedFile") unless unlink $sortedFile;
 
 		if(defined $options->{'index'}){
+		  my $sortfile = $finalFile . ".sort";
       my $gzfile = $finalFile .".gz";
 
-      my $zipCmd = 'set -o pipefail; sort -k 1,1 -k2,3n '.$finalFile.' | bgzip > '.$gzfile;
+      my $sortCmd = 'sort -k 1,1 -k2,3n '.$finalFile.' > '.$sortfile;
+      my $zipCmd = 'bgzip -c '.$sortfile.' > '.$gzfile;
       my $tabixCmd = 'tabix -p bed '.$gzfile;
+
+      my ($sortOUT,$sortERR,$sortEXIT) = capture{ system($sortCmd) };
+      croak("sort command failed : $sortCmd\n $sortERR") unless $sortEXIT == 0;
 
       my ($zipOUT,$zipERR,$zipEXIT) = capture{ system($zipCmd) };
       croak("zip command failed : $zipCmd\n $zipERR") unless $zipEXIT == 0;
@@ -131,6 +136,7 @@ eval {
       croak("tabix command failed : $tabixCmd\n $tabixERR") unless $tabixEXIT == 0;
 
       croak("unable to remove $finalFile") unless unlink $finalFile;
+      croak("unable to remove $sortfile") unless unlink $sortfile;
 		}
 	}
 
