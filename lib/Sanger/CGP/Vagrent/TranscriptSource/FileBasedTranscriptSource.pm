@@ -32,6 +32,9 @@ use Const::Fast qw(const);
 use Bio::DB::HTS;
 use Bio::DB::HTS::Tabix;
 
+use Set::IntervalTree;
+use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
+
 use Sanger::CGP::Vagrent::Data::Transcript;
 use Sanger::CGP::Vagrent::Data::Exon;
 use Sanger::CGP::Vagrent qw($VERSION);
@@ -118,9 +121,43 @@ sub _generateLocationString {
   return $gr->getChr.':'.$gr->getMinPos.'-'.$gr->getMaxPos;
 }
 
+sub _tabix_to_interval_tree {
+  my ($self, $chr) = @_;
+  return 1 if defined $self->{_cache_iTree}->{$chr};
+
+  my $full_tree = {};
+  if ($self->{_sorted}) {
+    $self->{_cache_iTree} = $full_tree;
+  }
+  else {
+    $full_tree = $self->{_cache_iTree};
+  }
+
+  my %collated;
+  $self->{_cache_tbx} = Bio::DB::HTS::Tabix->new(filename => $self->{_cache}) unless defined $self->{_cache_tbx};
+  my $iter = $self->{_cache_tbx}->query_full($chr);
+  return 1 unless defined $iter;
+    while(my $line = $iter->next) {
+    my ($chr, $s, $e, $object) = (split /\t/, $line)[0,1,2,6];
+    # +1 on end to convert to 1 bases, tabix module would handle this
+    my $this_loci = sprintf '%s:%d:%d', $chr, $s, $e+1;
+    push @{$collated{sprintf '%s:%d:%d', $chr, $s, $e+1}}, $object;
+  }
+
+  my $chr_tree = Set::IntervalTree->new();
+  for my $loci(keys %collated) {
+    my ($chr, $s, $e) = split ':', $loci;
+    $chr_tree->insert($collated{$loci}, $s, $e);
+    delete $collated{$loci};
+  }
+  $full_tree->{$chr} = $chr_tree;
+  return 1;
+}
+
 sub _getTranscriptsFromCache {
   my ($self,$gp) = @_;
-  $self->{_cache_tbx} = Bio::DB::HTS::Tabix->new(filename => $self->{_cache}) unless defined $self->{_cache_tbx};
+  my $chr = $gp->getChr();
+  $self->_tabix_to_interval_tree($chr);
   my $min;
   my $max = $gp->getMaxPos + $SEARCH_BUFFER;
   if($gp->getMinPos() < $SEARCH_BUFFER){
@@ -128,27 +165,39 @@ sub _getTranscriptsFromCache {
   } else {
     $min = ($gp->getMinPos - $SEARCH_BUFFER);
   }
-  my $iter = $self->{_cache_tbx}->query_full($gp->getChr(),$min,$max);
-  return undef unless defined $iter;
-  my $out = undef;
-  while(my $ret = $iter->next){
-    my $raw = (split("\t",$ret))[6];
-    my $VAR1;
-    eval $raw;
-    $VAR1->{_cdnaseq} = $self->_getTranscriptSeq($VAR1);
-    push @$out, $VAR1;
+  my @data = ();
+  @data = @{$self->{_cache_iTree}->{$chr}->fetch($min,$max)};
+  return undef unless(@data);
+  my @out;
+  for my $overlap(@data){
+    for my $item(@{$overlap}) {
+      unless(ref $item) { # turn string into object
+        my $VAR1;
+        eval $item;
+        $VAR1->{_cdnaseq} = $self->_getTranscriptSeq($VAR1);
+        $item = $VAR1;
+      }
+      push @out, $item;
+    }
   }
-  return $out;
+  @out = sort _sort_itree @out;
+  return \@out;
+}
+
+sub _sort_itree {
+  if($a->{_genomicminpos} != $b->{_genomicminpos}) {
+    return $a->{_genomicminpos} <=> $b->{_genomicminpos};
+  }
+  if($a->{_genomicmaxpos} != $b->{_genomicmaxpos}) {
+    return $a->{_genomicmaxpos} <=> $b->{_genomicmaxpos};
+  }
+  return 0;
 }
 
 sub _init {
-	my $self = shift;
-  my %vars = @_;
-  foreach my $k(keys(%vars)){
-    if($k eq 'cache'){
-      $self->_setCacheFile($vars{$k});
-    }
-  }
+	my ($self, %vars) = @_;
+  $self->_setCacheFile($vars{'cache'});
+  $self->{_sorted} = $vars{'sorted'};
 }
 
 sub _setCacheFile {

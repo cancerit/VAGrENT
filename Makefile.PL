@@ -55,6 +55,7 @@ WriteMakefile(
                     'Sort::Key' => '1.33',
                     'TAP::Harness' => '3.33',
                     'Try::Tiny' => '0.22',
+                    'Set::IntervalTree' => '0.12',
                    }
 );
 
