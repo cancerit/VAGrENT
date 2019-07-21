@@ -44,6 +44,7 @@ use Cwd qw(abs_path);
 
 use Const::Fast qw(const);
 use Data::Dumper;
+use Sanger::CGP::Vagrent;
 
 const my @ENSMBL_REF_FILE_EXTENTIONS => qw(cdna.all.fa.gz ncrna.fa.gz);
 const my $TRANSCRIPT_FILTER_SCRIPT => 'Admin_EnsemblTranscriptFilter.pl';
@@ -60,7 +61,7 @@ my $tmpDir = tempdir("VagrentEnsemblRefFileGenXXXXX", TMPDIR => 1, CLEANUP => 1)
 try {
   my $opts = option_builder();
   my ($codFasta, $ncFasta, $features,$transList);
-  
+
   print "Downloading Files -------- ";
   if(defined $opts->{'f'}){
     my $urls = getFileUrlsForRetrival($opts);
@@ -72,7 +73,7 @@ try {
     $features = $opts->{'features'};
     print "Skipped, files locally supplied\n";
   }
-  
+
   print "Obtaining Filtered Transcript List ----- ";
   unless(defined $opts->{'trans_list'}){
     $transList = generateTranscriptListFile($tmpDir,$features, $codFasta, $ncFasta);
@@ -81,11 +82,11 @@ try {
     $transList = $opts->{'trans_list'};
     print "Skipped, files locally supplied\n";
   }
-  
+
   print "Building Cache Files ----- ";
   buildCacheFiles($tmpDir, $opts, $features, $transList, $codFasta, $ncFasta);
   print "Done\n";
-    
+
 } catch {
   croak "An error occurred while building reference support files\:\n\t$_"; # not $@
 };
@@ -140,7 +141,7 @@ sub getFileUrlsForRetrival {
 	# ftp://ftp.ensembl.org/pub/release-90/fasta/homo_sapiens/cdna
 	# ftp://ftp.ensembl.org/pub/release-90/fasta/homo_sapiens/ncrna
 	# ftp://ftp.ensembl.org/pub/release-90/gff3/homo_sapiens
-	
+
 	# ftp://ftp.ensembl.org/pub/release-70/fasta/homo_sapiens/cdna
 	# ftp://ftp.ensembl.org/pub/release-70/fasta/homo_sapiens/ncrna
 	# ftp://ftp.ensembl.org/pub/release-70/gtf/homo_sapiens
@@ -158,7 +159,7 @@ sub getFileUrlsForRetrival {
 	my $gtfDir = $opts->{'f'};
 	$gtfDir =~ s|/cdna$||;
 	$gtfDir =~ s|/fasta/|/gtf/|;
-	my $ftp = undef; 
+	my $ftp = undef;
 	foreach my $dir($opts->{'f'}, $ncFaDir, $gffDir, $gtfDir) {
 		my @comps = split /\/+/, $dir;
   	my $root = shift @comps; # remove ftp:
@@ -229,11 +230,18 @@ sub option_builder {
 		'd|database=s' => \$opts{'d'},
 		'c|ccds=s' => \$opts{'c'},
 		'fai|fai=s' => \$opts{'fai'},
+    'v|version' => \$opts{'version'},
   );
+
+  if($opts{'version'}){
+    print 'Version: '.Sanger::CGP::Vagrent->VERSION."\n";
+    exit;
+  }
+
   pod2usage() if($opts{'h'});
   pod2usage('Must specify the output directory to use') unless(defined $opts{'o'});
   pod2usage("Output directory must exist and be writable: $opts{o}") unless(-e $opts{'o'} && -d $opts{'o'} && -w $opts{'o'});
-  
+
   if(defined $opts{'f'}){
     if(defined $opts{'features'} || defined $opts{'cdna_fa'} || defined $opts{'ncrna_fa'}){
       pod2usage('Please only define the remote URL or the local files, not both');
@@ -248,7 +256,7 @@ sub option_builder {
       pod2usage('Please specify a valid coding cDNA sequence file (-cf)') unless -e $opts{'cdna_fa'} && -r $opts{'cdna_fa'};
       pod2usage('Please specify a valid non-coding cDNA sequence file (-nf)') unless -e $opts{'ncrna_fa'} && -r $opts{'ncrna_fa'};
     }
-  
+
   }
   if(defined($opts{'fai'})){
   	pod2usage('Unable to read the fai file: '.$opts{'fai'}) unless -e $opts{'fai'} && -r $opts{'fai'};
@@ -277,7 +285,7 @@ Admin_EnsemblReferenceFileGenerator.pl [-h] [-sp Human] [-as GRCh37] [-d homo_sa
 
   Required Options:
 
-    --output       (-o)     Output directory    
+    --output       (-o)     Output directory
 
     --species      (-sp)    Species (ie human, mouse)
 
@@ -286,26 +294,28 @@ Admin_EnsemblReferenceFileGenerator.pl [-h] [-sp Human] [-as GRCh37] [-d homo_sa
     --database     (-d)     Ensembl core database version number (ie homo_sapiens_core_74_37p)
 
   Dynamic Download:
-  
+
     --ftp          (-f)     Ensembl ftp directory containing the cDNA fasta sequence files
 
   Or Local Files:
-  
+
     --features     (-gf)    gff3 or gtf file containing transcript and gene information
-  
+
     --cdna_fa      (-cf)    Fasta file containing protein coding cdna sequences
-  
-    --ncrna_fa     (-nf)    Fasta file containing non-coding cdna sequences 
+
+    --ncrna_fa     (-nf)    Fasta file containing non-coding cdna sequences
 
   Optional:
-  
+
     --help         (-h)     Brief documentation
-        
+
     --ccds         (-c)     (Recommended) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS
-    
+
     --fai          (-fai)   (Recommended) The samtools fasts index file (.fai) for your reference genome
                               This is the reference genome that your bam and vcf files will be mapped to
-    
+
     --trans_list   (-tl)    List of preprepared transcript accessions, only these accesions will be included in the reference output
-    
+
+    --version      (-v)     Output version number
+
 =cut
