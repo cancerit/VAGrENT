@@ -14,7 +14,7 @@ script:
  - docker images | grep -c vagrent
  - echo 'Verify program(s) from this repo'
  - docker run -t --rm vagrent AnnotateVcf.pl --version
- - docker run -t --rm vagrent Admin_CacheFileBuilder --version
- - docker run -t --rm vagrent Admin_EnsemblReferenceFileGenerator --version
- - docker run -t --rm vagrent Admin_EnsemblTranscriptFilter --version
- - docker run -t --rm vagrent Admin_GeneRegionBedDumper --version
+ - docker run -t --rm vagrent Admin_CacheFileBuilder.pl --version
+ - docker run -t --rm vagrent Admin_EnsemblReferenceFileGenerator.pl --version
+ - docker run -t --rm vagrent Admin_EnsemblTranscriptFilter.pl --version
+ - docker run -t --rm vagrent Admin_GeneRegionBedDumper.pl --version
