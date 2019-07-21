@@ -31,9 +31,7 @@ use Const::Fast qw(const);
 
 use Bio::DB::HTS;
 use Bio::DB::HTS::Tabix;
-
 use Set::IntervalTree;
-use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
 
 use Sanger::CGP::Vagrent::Data::Transcript;
 use Sanger::CGP::Vagrent::Data::Exon;
