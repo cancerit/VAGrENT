@@ -1,5 +1,11 @@
 # CHANGES
 
+## NEXT
+
+* Loads vagrent cache into IntervalTree to speed up processing by:
+  * reducing redundant/random disk access
+  * reducing repeated decompression of same data when events are local to each other
+
 ## 3.3.5
 
 * fixing pipefail issue for non-bash environments, splitting command into 2 separate executions.
