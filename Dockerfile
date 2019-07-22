@@ -52,8 +52,8 @@ FROM ubuntu:16.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="v3.2.2" \
-      description="cgpPindel docker"
+      version="3.3.5" \
+      description="VAGrENT genome annotation docker"
 
 RUN apt-get -yq update
 RUN apt-get install -yq --no-install-recommends \
