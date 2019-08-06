@@ -1,5 +1,10 @@
 # CHANGES
 
+## NEXT
+
+* Add Dockerfile and supporting scripts
+* Switch travis-ci to build and test under docker
+
 ## 3.3.5
 
 * fixing pipefail issue for non-bash environments, splitting command into 2 separate executions.

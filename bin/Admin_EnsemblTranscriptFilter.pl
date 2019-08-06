@@ -38,6 +38,7 @@ use File::Type;
 use Const::Fast qw(const);
 
 use Data::Dumper;
+use Sanger::CGP::Vagrent;
 
 const my $FASTA_HEADER_GREP => 'zgrep "^>" %s';
 
@@ -80,13 +81,13 @@ sub getTranscripts {
       my ($transcript,$biotype) = parseLine($rec);
       next unless hasGoodBiotype($opts,$biotype);
       # Have to store the transcript accessions twice, with and without the version.
-      # Depending on the Ensembl version or species, the accession in the fasta file may 
+      # Depending on the Ensembl version or species, the accession in the fasta file may
       # or may not have the transcript version on the end.
       # Some species gff/gtf files include the the version in the accession, some don't
       # Ensembl versions with imported gene build will preserve the originators naming conventions
       push(@$good_transcripts,$transcript);
       $transcript =~ s/\.\d+?$//;
-      push(@$good_transcripts,$transcript);      
+      push(@$good_transcripts,$transcript);
     }
   }
   return $good_transcripts;
@@ -104,7 +105,7 @@ sub parseLine {
   my $line = shift;
   my @cols = split /\s/, $line;
   my $full = join('|',@cols);
-  my $transcript = shift @cols; 
+  my $transcript = shift @cols;
   $transcript =~ s/^>//;
   my $biotype = undef;
   foreach my $c (@cols){
@@ -125,7 +126,14 @@ sub option_builder {
 		'f|fasta=s@' => \$opts{'f'},
 		'o|outfile=s' => \$opts{'o'},
 		'b|biotypes=s@' => \$opts{'b'},
+    'v|version' => \$opts{'version'},
   );
+
+  if($opts{'version'}){
+    print 'Version: '.Sanger::CGP::Vagrent->VERSION."\n";
+    exit;
+  }
+
   pod2usage() if($opts{'h'});
   pod2usage('Output file must not already exist') if defined $opts{'o'} && -e $opts{'o'};
   if(scalar(@{$opts{'f'}}) > 0){
@@ -149,8 +157,8 @@ Admin_EnsemblTranscriptFilter.pl - Generates filtered list of Transcript accessi
 
 Admin_EnsemblTranscriptFilter.pl [-h] [-f /path/to/ensembl.fa] [-o /path/to/output.list] [-b biotype]
 
-  Required Options: 
-    
+  Required Options:
+
     --fasta        (-f)     Ensembl fasta file from Ensembl's FTP site, can be specified multiple times.
 
     --biotypes     (-b)     Ensembl transcript biotypes to filter for, can be specified multiple times.
@@ -160,6 +168,8 @@ Admin_EnsemblTranscriptFilter.pl [-h] [-f /path/to/ensembl.fa] [-o /path/to/outp
     --help         (-h)     Brief documentation.
 
     --output       (-o)     Output file, optional will default to stdout.
+
+    --version      (-v)     Output version number
 
 =cut
 
