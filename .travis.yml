@@ -2,28 +2,19 @@ notifications:
   slack: wtsi-cgpit:ptUMR1tkNyZJYd9TpGoss8WR
   email: false
 
-env:
- - CC=gcc
+sudo: false
 
-addons:
- apt:
-  packages:
-   - build-essential
-   - autoconf
-   - curl
-   - zlib1g-dev
-   - libncurses5-dev
-   - libpstreams-dev
-   - libcurl4-openssl-dev
-   - libgd-dev
-   - libdb-dev
-
-install: true
-
-language: perl
-
-perl:
- - "5.22"
+services:
+  - docker
 
 script:
- - ./setup.sh $HOME/VAGrENT-opt
+ - set -e
+ - echo 'Build and check docker image'
+ - docker build -t vagrent .
+ - docker images | grep -c vagrent
+ - echo 'Verify program(s) from this repo'
+ - docker run -t --rm vagrent AnnotateVcf.pl --version
+ - docker run -t --rm vagrent Admin_CacheFileBuilder.pl --version
+ - docker run -t --rm vagrent Admin_EnsemblReferenceFileGenerator.pl --version
+ - docker run -t --rm vagrent Admin_EnsemblTranscriptFilter.pl --version
+ - docker run -t --rm vagrent Admin_GeneRegionBedDumper.pl --version

@@ -48,6 +48,7 @@ use Bio::SeqIO;
 use Bio::Seq;
 use Bio::Tools::GFF;
 
+use Sanger::CGP::Vagrent;
 use Sanger::CGP::Vagrent::Data::Transcript;
 use Sanger::CGP::Vagrent::Data::Exon;
 
@@ -111,7 +112,7 @@ try {
 	my $ccdsList = parseCCDSfile($opts->{'c'});
 	my ($tmp_cache_file,$tmp_seq_file) = processFeatureFile($opts,$tmpDir,$chrList,$seqFiles,$transList,$ccdsList);
 	finaliseOutputFiles($opts,$tmp_cache_file,$tmp_seq_file);
-	
+
 } catch {
   die "An error occurred while building reference support files\:\n\t$_"; # not $@
 };
@@ -120,11 +121,11 @@ sub finaliseOutputFiles {
   my ($opts,$tmp_cache,$tmp_seq) = @_;
   my $cache_file = makeCacheFilePath($opts);
   my $seq_file = makeSeqFilePath($opts);
-  
+
   copy($tmp_seq,$seq_file) or croak("unable to copy sequence file to desination: $!");
   capture_stderr {my $fa_index = Bio::DB::HTS::Faidx->new($seq_file)};
 
-  
+
   my $snz_cmd = sprintf($SORT_N_BGZIP, $tmp_cache, $cache_file);
   my ($snz_stdout, $snz_stderr, $snz_exit) = capture {system($snz_cmd);};
   croak('Error in sorting and bgzipping the cache file: '.$snz_stderr) if $snz_exit > 0;
@@ -193,7 +194,7 @@ sub processFeatureFile {
       } else {
         next;
       }
-    } 
+    }
     next unless defined $tid;
     if($current_chr ne $chr) {
       # chromosome has ended, have to process transcripts
@@ -211,8 +212,8 @@ sub processFeatureFile {
         print "Sequence $current_chr not found in fai file: using $current_chr_translation as alternative\n" if $opts->{'debug'};
       }
       next if !defined $current_chr_translation;
-    }  
-    
+    }
+
     if(exists $store->{$tid}){
       push @{$store->{$tid}}, $feat;
     } elsif(exists $transList->{$tid}) {
@@ -244,7 +245,7 @@ sub writeOutput {
   };
   $trans->{_cdnaseq} = undef;
   $cache_row .= "\t".Dumper($trans)."\n";
-  
+
   $fa->write_seq($seq);
   print $cache $cache_row;
 }
@@ -266,7 +267,7 @@ sub convertTranscript {
   my $rnaLengthSum = 0;
   my $strand = undef;
   my @exons;
-  
+
   my @raw_exons;
   my @raw_cds;
   my $gene_id = undef;
@@ -311,7 +312,7 @@ sub convertTranscript {
 							  maxpos => $e->end,
 							  rnaminpos => $rmin,
 							  rnamaxpos => $rmax,);
-		
+
 		if(defined $strand){
 		  croak('Inconsistant strand in transcript') unless $strand == $e->strand;
 		} else {
@@ -331,7 +332,7 @@ sub convertTranscript {
       }
     }
     $protAccVer = 1;
-    
+
   } else {
 		# non-coding
 		$protAcc = undef;
@@ -340,7 +341,7 @@ sub convertTranscript {
 		$cdsMax = undef;
 		$cdsPhase = -1;
 	}
-  
+
   my @sortedExons = sort {$a->getMinPos <=> $b->getMinPos} @exons;
   my $transcript = Sanger::CGP::Vagrent::Data::Transcript->new(
 																		db => 'Ensembl',
@@ -360,8 +361,8 @@ sub convertTranscript {
 																		genomicminpos => $sortedExons[0]->getMinPos,
 																		genomicmaxpos => $sortedExons[-1]->getMaxPos,
 																		exons => \@exons,);
-    
-  return $transcript; 
+
+  return $transcript;
 }
 
 sub getSequence {
@@ -424,17 +425,17 @@ sub calculateCDS {
     } elsif($f->primary_tag eq $PRIMARY_STOP){
       $stopCodonLength += $f->length;
     }
-  }  
+  }
   my $utr5Length_e = 0;
   my $cdsLength_e = 0;
   my $utr3Length_e = 0;
-  
+
   my $cds_first = $cds[0];
   my $cds_last = $cds[-1];
-  
+
   my $break = 0;
   my $mess = '';
-  
+
   foreach my $e(@$exons){
     croak('Recieved undefined exon: '.Dumper($exons)) unless defined($e);
     # remember start = min, end = max.  start and end DO NOT infer orientation in BIOPERL
@@ -453,13 +454,13 @@ sub calculateCDS {
         # exon starts after the first CDS fragment starts
         # and exon ends before the last CDS fragment ends
         # exon is entirely within the CDS
-        $cdsLength_e += $e->length; 
+        $cdsLength_e += $e->length;
       } elsif ($cds_first->start == $cds_last->start && $cds_first->end == $cds_last->end && $e->start <= $cds_first->start && $e->end >= $cds_last->end){
-        # single CDS fragment contained entirely within this exon  
+        # single CDS fragment contained entirely within this exon
         $utr5Length_e += $cds_first->start - $e->start;
         $cdsLength_e += $e->length - (($cds_first->start - $e->start) + ($e->end - $cds_last->end));
         $utr3Length_e += $e->end - $cds_last->end;
-      } elsif ($e->start > $cds_first->end && $e->start <= $cds_last->end && $e->end >= $cds_last->end){  
+      } elsif ($e->start > $cds_first->end && $e->start <= $cds_last->end && $e->end >= $cds_last->end){
         # exon starts after the first CDS fragment ends
         # and the last CDS fragment ends within this exon
         $cdsLength_e += $e->length - ($e->end - $cds_last->end);
@@ -475,13 +476,13 @@ sub calculateCDS {
         warn "\n";
         foreach (@$exons){warn "EXON : ",Dumper($_),"\n"};
         warn "\n";
-        foreach ($cds_first,$cds_last){warn "CDS BOUNDRIES : ",Dumper($_),"\n"};   
+        foreach ($cds_first,$cds_last){warn "CDS BOUNDRIES : ",Dumper($_),"\n"};
         warn "\n";
         warn "PROC : ",Dumper($e),"\n";
         croak('unhandled exon');
       }
-      
-            
+
+
     } elsif($strand < 0){
       # reverse strand start = min = end of feature, end = max = start of feature
       if($e->start > $cds_first->end){
@@ -499,7 +500,7 @@ sub calculateCDS {
         # exon is entirely within the CDS
         $cdsLength_e += $e->length;
       } elsif ($cds_first->end == $cds_last->end && $cds_first->start == $cds_last->start && $e->end >= $cds_first->end && $e->start <= $cds_last->start){
-        # single CDS fragment contained entirely within this exon   
+        # single CDS fragment contained entirely within this exon
         $utr5Length_e += $e->end - $cds_first->end;
         $cdsLength_e += $e->length - (($e->end - $cds_first->end) + ($cds_last->start - $e->start));
         $utr3Length_e += $cds_last->start - $e->start;
@@ -519,7 +520,7 @@ sub calculateCDS {
         warn "\n";
         foreach (@$exons){warn "EXON : ",Dumper($_),"\n"};
         warn "\n";
-        foreach ($cds_first,$cds_last){warn "CDS BOUNDRIES : ",Dumper($_),"\n"};   
+        foreach ($cds_first,$cds_last){warn "CDS BOUNDRIES : ",Dumper($_),"\n"};
         warn "\n";
         warn "PROC : ",Dumper($e),"\n";
         croak('unhandled exon');
@@ -528,9 +529,9 @@ sub calculateCDS {
       croak('Cannot process strand: ',$strand);
     }
   }
-  
+
   # length calculation double check
-  
+
   if($utr5Length + $utr3Length > 0){
     # UTR features present in input file, check all 3 values, skip if data is inconsistant
     return (undef,undef,undef) unless($utr5Length == $utr5Length_e && $cdsLength == $cdsLength_e && $utr3Length == $utr3Length_e);
@@ -538,7 +539,7 @@ sub calculateCDS {
     # only compare the CDS length, skip if data is inconsistant
     return (undef,undef,undef) unless($cdsLength == $cdsLength_e);
   }
-  
+
   my $cds_min = $utr5Length_e + 1;
   my $cds_max = $utr5Length_e + $cdsLength_e + $stopCodonLength;
   my $cds_phase = undef;
@@ -556,11 +557,11 @@ sub calculateCDS {
 
 sub getGeneTypeForTranscript {
   my ($opts,$t) = @_;
-  
+
   my $type = undef;
   my $type_tag = undef;
-  
-  foreach my $f(@$t){ 
+
+  foreach my $f(@$t){
     foreach my $tag(@TAG_BIOTYPE){
       if($f->has_tag($tag)){
         my ($raw_type) = $f->get_tag_values($tag);
@@ -569,7 +570,7 @@ sub getGeneTypeForTranscript {
           $type_tag = $tag;
         } elsif($type ne $raw_type){
           croak('Transcript has inconsistant biotype');
-        }            
+        }
       }
     }
   }
@@ -587,7 +588,7 @@ sub getGeneTypeForTranscript {
 		return Sanger::CGP::Vagrent::Data::Transcript::getRRnaType();
 	} else {
 	  if($type_tag eq $TAG_GENE_BIOTYPE){
-	    # this can happen, there can be a discrepancy between gene and transcript biotype in ensembl.  
+	    # this can happen, there can be a discrepancy between gene and transcript biotype in ensembl.
 	    # If they are only reporting the gene biotype and its not one we can handle we have to skip the transcript.
 	    return undef;
 	  } else {
@@ -603,11 +604,11 @@ sub getGeneTypeForTranscript {
 
 sub featureOrderSortFunction {
   my $tag = undef;
-  
+
   if($a->strand != $b->strand){
     croak('Features strands not consistent');
   }
-  
+
   if($a->strand == 1 && $a->strand == $b->strand){
     return $a->start <=> $b->start;
   } elsif($a->strand == -1 && $a->strand == $b->strand){
@@ -626,7 +627,7 @@ sub checkChromosome {
     $use_chr = $chr;
   } else {
     # chromosome not in fai file
-    # lets try chr prefix discrepancies 
+    # lets try chr prefix discrepancies
     if($chr =~ m/^chr(.+)$/){
       # chromosome starts with chr, try removing and search again.
       $use_chr = $1 if first { $_ eq $1 } @$chrList;
@@ -682,8 +683,8 @@ sub openFeatureFile {
     $gff_version = 3;
   } else {
     croak('Unable to determine format of '.$file);
-  } 
-  
+  }
+
   return Bio::Tools::GFF->new(-fh => $fh, -gff_version => $gff_version);
 }
 
@@ -702,7 +703,7 @@ sub openSeqFiles {
       croak($uz_stderr) if $uz_exit > 0;
       my ($bgz_stdout, $bgz_stderr, $bgz_exit) = capture {system($bgzip_cmd);};
       croak($bgz_stderr) if $bgz_exit > 0;
-      
+
       $file = $zipped;
     } elsif(first { $_ eq $fileType } @TEXT_TYPES){
       # plain text file, needs zipping
@@ -717,7 +718,7 @@ sub openSeqFiles {
     # HTS call prints to stderr if it has to generate an fai file, which it will here
     # feels dirty but this makes it quiet.
     capture_stderr {push @$out, Bio::DB::HTS::Faidx->new($file)};
-  } 
+  }
   return $out;
 }
 
@@ -787,7 +788,13 @@ sub option_builder {
 		'c|ccds=s' => \$opts{'c'},
 		'fai|fai=s' => \$opts{'fai'},
 		'debug|debug' => \$opts{'debug'},
+    'v|version' => \$opts{'version'},
   );
+
+  if($opts{'version'}){
+    print 'Version: '.Sanger::CGP::Vagrent->VERSION."\n";
+    exit;
+  }
 
   pod2usage() if($opts{'h'});
   if(scalar(@{$opts{'f'}}) > 0){
@@ -819,7 +826,7 @@ __END__
 
 =head1 NAME
 
-Admin_CacheFileBuilder.pl - Generates the Vagrent reference data set from the supplied GFF£/GTF and Fasta files 
+Admin_CacheFileBuilder.pl - Generates the Vagrent reference data set from the supplied GFF£/GTF and Fasta files
 
 =head1 SYNOPSIS
 
@@ -832,7 +839,7 @@ Admin_CacheFileBuilder.pl [-h] [-f /path/to/sequence.fa] [-gff /path/to/annotati
     --fasta        (-f)     Fasta file containing Transcript sequences, can be specified multiple times.
 
     --features     (-gf)   GFF3 or GTF file containing genomic annotation
-    
+
     --transcripts  (-t)     Transcript accession file, (simple list, one accession per line)
 
     --species      (-sp)    Species (ie human, mouse)
@@ -840,15 +847,18 @@ Admin_CacheFileBuilder.pl [-h] [-f /path/to/sequence.fa] [-gff /path/to/annotati
     --assembly     (-as)    Assembly version (ie GRCh37, GRCm38)
 
     --data_version (-d)     Reference version number (Ensemble example: homo_sapiens_core_74_37p)
-    
+
     Other Options:
-    
-    --help         (-h)     Brief documentation   
+
+    --help         (-h)     Brief documentation
 
     --ccds         (-c)     (Recommended) The CCDS2Sequence file from the relevant CCDS release, see http://www.ncbi.nlm.nih.gov/CCDS
-    
+
     --fai          (-fai)   (Recommended) The samtools fasts index file (.fai) for your reference genome
                               This is the reference genome that your bam and vcf files will be mapped to
-                              
-    --debug        (-debug) This turns on the debug output, useful if you are having issues with a specific Ensembl build                  
+
+    --debug        (-debug) This turns on the debug output, useful if you are having issues with a specific Ensembl build
+
+    --version      (-v)     Output version number
+
 =cut
