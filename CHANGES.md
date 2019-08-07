@@ -1,6 +1,6 @@
 # CHANGES
 
-## NEXT
+## 3.5.0
 
 * Loads vagrent cache into IntervalTree to speed up processing by:
   * reducing redundant/random disk access
