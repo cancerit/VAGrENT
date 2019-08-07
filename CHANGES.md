@@ -1,6 +1,6 @@
 # CHANGES
 
-## NEXT
+## 3.4.0
 
 * Add Dockerfile and supporting scripts
 * Switch travis-ci to build and test under docker
