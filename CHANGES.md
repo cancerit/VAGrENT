@@ -1,5 +1,11 @@
 # CHANGES
 
+## 3.5.0
+
+* Loads vagrent cache into IntervalTree to speed up processing by:
+  * reducing redundant/random disk access
+  * reducing repeated decompression of same data when events are local to each other
+
 ## 3.4.0
 
 * Add Dockerfile and supporting scripts
