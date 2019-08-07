@@ -404,9 +404,11 @@ sub make_process_log {
 
 sub get_annotator {
 	my $options = shift;
+  my $sorted = $options->{'sorted'};
+  $sorted = 1 if(-e $options->{'input'}.'.tbi');
 
   # creating an EnsemblTranscriptSource using the Ensembl registry
-	my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => $options->{'cache'});
+	my $ts = Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource->new('cache' => $options->{'cache'}, 'sorted' => $sorted);
 
 	# creating an AnnotatorCollection
 	my $annotator = Sanger::CGP::Vagrent::Annotators::AnnotatorCollection->new(
@@ -473,7 +475,7 @@ sub option_builder {
     'p|process=n' => \$opts{'process'},
     'sp|species=s' => \$opts{'species'},
     'as|assembly=s' => \$opts{'assembly'},
-
+    'u|sorted' => \$opts{'sorted'},
   );
 
   pod2usage() if($opts{'help'});
@@ -536,5 +538,7 @@ AnnotateVcf.pl [-h] [-t] -i <IN_FILE> -o <OUT_FILE> -c <VAGRENT_CACHE_FILE> [-sp
     --process   (-p)      ID_PROCESS that generated this file
 
     --tabix     (-t)      bgzip and tabix index the output file (will generate the .gz version of the -o option)
+
+    --sorted    (-s)      Input is sorted - lower memory requirement, automatic if *.tbi found
 
 =cut
