@@ -164,7 +164,9 @@ sub _getTranscriptsFromCache {
     $min = ($gp->getMinPos - $SEARCH_BUFFER);
   }
   my @data = ();
-  @data = @{$self->{_cache_iTree}->{$chr}->fetch($min,$max)};
+  if(exists $self->{_cache_iTree}->{$chr}) {
+    @data = @{$self->{_cache_iTree}->{$chr}->fetch($min,$max)};
+  }
   return undef unless(@data);
   my @out;
   for my $overlap(@data){

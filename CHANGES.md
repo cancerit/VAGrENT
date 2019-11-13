@@ -1,5 +1,9 @@
 # CHANGES
 
+## 3.5.1
+
+ * Handle chr not resent in itree when running `Admin_GeneRegionBedDumper.pl`
+
 ## 3.5.0
 
 * Loads vagrent cache into IntervalTree to speed up processing by:
