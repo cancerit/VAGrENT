@@ -2,7 +2,7 @@
 
 ## 3.5.1
 
- * Handle chr not resent in itree when running `Admin_GeneRegionBedDumper.pl`
+ * Handle chr not present in itree hash when running `Admin_GeneRegionBedDumper.pl`
 
 ## 3.5.0
 
