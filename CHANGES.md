@@ -1,5 +1,10 @@
 # CHANGES
 
+## 3.5.2
+
+* Make errors emit non-zero exit codes #39
+* Cleanup input option #38
+
 ## 3.5.1
 
  * Handle chr not present in itree hash when running `Admin_GeneRegionBedDumper.pl`
