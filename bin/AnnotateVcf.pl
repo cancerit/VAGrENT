@@ -21,8 +21,8 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 ##########LICENCE##########
 
-
 use strict;
+use autodie qw(:all);
 use English qw(-no_match_vars);
 use warnings FATAL => 'all';
 use Carp;
@@ -81,44 +81,35 @@ const my $REPRE_BM => Sanger::CGP::Vagrent::Bookmarkers::RepresentativeTranscrip
 const my $WORST_BM => Sanger::CGP::Vagrent::Bookmarkers::MostDeleteriousBookmarker->new();
 
 const my $SORT_CMD => q{(grep -B 100000000 -m 1 '^#CHROM' %s ; grep -v '^#' %s | sort -k1,1 -k2,2n -k4,4 -k5,5) > %s};
-const my $BGZIP_CMD => 'bgzip %s';
+const my $BGZIP_CMD => 'bgzip -f %s';
 const my $TABIX_CMB => 'tabix -p vcf %s';
 
 
 my $header_already_parsed = 0;
 
-eval {
-  my $options = option_builder();
-  Vcf::validate($options->{'input'}) unless($options->{'novalidate'});
-  my $vcf_in = Vcf->new( file => $options->{'input'} );
-  unless(defined $options->{'species'} && defined $options->{'assembly'}) {
-    croak 'unable to determine species and assembly from VCF file, please specify on command line' unless find_species_in_vcf($vcf_in,$options);
-  }
-  my $output = $options->{'output'};
-  if($options->{'tabix'}){
-    my $outdir;
-    (undef, $outdir, undef) = fileparse($output);
-    (undef,$output) = tempfile($outdir.'vagrentXXXXXXX', OPEN => 0, SUFFIX => '.vcf');
-  }
+my $options = option_builder();
+Vcf::validate($options->{'input'}) unless($options->{'novalidate'});
+my $vcf_in = Vcf->new( file => $options->{'input'} );
+unless(defined $options->{'species'} && defined $options->{'assembly'}) {
+  croak 'unable to determine species and assembly from VCF file, please specify on command line' unless find_species_in_vcf($vcf_in,$options);
+}
+my $output = $options->{'output'};
+if($options->{'tabix'}){
+  my $outdir;
+  (undef, $outdir, undef) = fileparse($output);
+  (undef,$output) = tempfile($outdir.'vagrentXXXXXXX', OPEN => 0, SUFFIX => '.vcf');
+}
 
-  open my $OUT_FH, '>', $output or croak 'Failed to create: '.$output;
-  my $annotator = get_annotator($options);
+open my $OUT_FH, '>', $output or croak 'Failed to create: '.$output;
+my $annotator = get_annotator($options);
 
-  process_data($vcf_in,$OUT_FH,$annotator,$options);
-  close $OUT_FH or croak 'Failed to close: '.$output;
-  Vcf::validate($output) unless($options->{'novalidate'});
+process_data($vcf_in,$OUT_FH,$annotator,$options);
+close $OUT_FH or croak 'Failed to close: '.$output;
+Vcf::validate($output) unless($options->{'novalidate'});
 
-  if($options->{'tabix'}){
-    compressAndIndex($options,$output);
-  }
-
-  1;
-} or do {
-  warn "EVAL_ERROR: $EVAL_ERROR\n" if($EVAL_ERROR);
-  warn "CHILD_ERROR: $CHILD_ERROR\n" if($CHILD_ERROR);
-  warn "OS_ERROR: $OS_ERROR\n" if($OS_ERROR);
-  croak 'A problem occurred';
-};
+if($options->{'tabix'}){
+  compressAndIndex($options,$output);
+}
 
 sub compressAndIndex {
   my ($options, $tmpfile) = @_;
@@ -167,18 +158,9 @@ sub process_data {
   my $c = 0;
   while(my $record = $in->next_data_array) {
     $c++;
-    #next unless ($record->[0] eq '12' && $record->[1] eq '12810079');
-    #print join $TAB, 'BEFORE',@{$record};
-    #print $NL;
-
-
     generate_annotation($in,$anno,$opts,$record);
     print $out join $TAB, @{$record};
     print $out $NL;
-
-    #print join $TAB, 'AFTER',@{$record};
-    #print $NL;
-
   }
 }
 
@@ -496,6 +478,8 @@ sub option_builder {
 	pod2usage(q{'-c' is an empty file}) unless(-s $opts{'cache'});
 
 	pod2usage(q{'-o' must be defined}) unless($opts{'output'});
+
+  $opts{'output'} =~ s/\.gz$//; # clean up full path
 
   return \%opts;
 }
