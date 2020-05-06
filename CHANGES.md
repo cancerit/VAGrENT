@@ -1,5 +1,9 @@
 # CHANGES
 
+## 3.6.1
+
+* Missing command line arg description in `addVagrentContext.pl`
+
 ## 3.6.0
 
 * Adds `addVagrentContext.pl` to replace unsupported internal code.
