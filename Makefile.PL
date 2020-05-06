@@ -35,7 +35,8 @@ WriteMakefile(
                         bin/Admin_EnsemblReferenceFileGenerator.pl
                         bin/Admin_EnsemblTranscriptFilter.pl
                         bin/Admin_GeneRegionBedDumper.pl
-                        bin/AnnotateVcf.pl)],
+                        bin/AnnotateVcf.pl
+                        bin/addVagrentContext.pl)],
   PREREQ_PM     => {
                     'Attribute::Abstract' => '1.02',
                     'Bio::DB::HTS' => '1.11',
