@@ -9,8 +9,6 @@ use Bio::DB::HTS::Faidx;
 use Sanger::CGP::Vagrent::TranscriptSource::FileBasedTranscriptSource;
 use Sanger::CGP::Vagrent::Data::GenomicRegion;
 
-use Data::Dumper;
-
 if(@ARGV < 4) {
   print STDERR "USAGE: genome.fa vagrent.cache.gz bases_context loci_in.tab [pad_gene]\n\n";
   print STDERR "  genome.fa     = reference genome fasta with fai index.\n";
