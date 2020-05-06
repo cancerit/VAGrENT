@@ -1,5 +1,10 @@
 # CHANGES
 
+## 3.6.0
+
+* Adds `addVagrentContext.pl` to replace unsupported internal code.
+* Cleans up some of the build processes
+
 ## 3.5.2
 
 * Make errors emit non-zero exit codes #39
