@@ -11,10 +11,11 @@ use Sanger::CGP::Vagrent::Data::GenomicRegion;
 
 if(@ARGV < 4) {
   print STDERR "USAGE: genome.fa vagrent.cache.gz bases_context loci_in.tab [pad_gene]\n\n";
-  print STDERR "  genome.fa     = reference genome fasta with fai index.\n";
-  print STDERR "  bases_context = Number of surrounding context bases (N +/-).\n";
-  print STDERR "  loci_in.tab   = tab delimited file beginning: 'chr\\tpos...\\n'.\n";
-  print STDERR "  pad_gene      = 1 indicates that coordinates for gene overlap are padded with 'bases_context'\n";
+  print STDERR "  genome.fa        = reference genome fasta with fai index.\n";
+  print STDERR "  vagrent.cache.gz = VAGrENT cache file.\n";
+  print STDERR "  bases_context    = Number of surrounding context bases (N +/-).\n";
+  print STDERR "  loci_in.tab      = tab delimited file beginning: 'chr\\tpos...\\n'.\n";
+  print STDERR "  pad_gene         = 1 indicates that coordinates for gene overlap are padded with 'bases_context'\n";
   print STDERR "\nIf first line of input prefixed # understood to be header and new headings added\n";
   print STDERR "Ouput is original line with '\\tWT\\tCONTEXT\\tGENE\\tSTRAND' appended\n";
   exit 1;
