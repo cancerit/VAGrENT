@@ -3,6 +3,7 @@ FROM ubuntu:16.04 as builder
 USER root
 
 # ALL tool versions used by opt-build.sh
+# ensure updated in setup.sh too
 ENV VER_BEDTOOLS="2.28.0"
 ENV VER_VCFTOOLS="0.1.16"
 ENV VER_BIODBHTS="2.10"
