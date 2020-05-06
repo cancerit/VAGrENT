@@ -53,7 +53,7 @@ FROM ubuntu:16.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \
-      version="3.5.1" \
+      version="3.6.0" \
       description="VAGrENT genome annotation docker"
 
 RUN apt-get -yq update
