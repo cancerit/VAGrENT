@@ -1,4 +1,4 @@
-FROM ubuntu:16.04 as builder
+FROM ubuntu:20.04 as builder
 
 USER root
 
@@ -6,9 +6,9 @@ USER root
 # ensure updated in setup.sh too
 ENV VER_BEDTOOLS="2.28.0"
 ENV VER_VCFTOOLS="0.1.16"
-ENV VER_BIODBHTS="2.10"
-ENV VER_HTSLIB="1.9"
-ENV VER_SAMTOOLS="1.9"
+ENV VER_BIODBHTS="3.01"
+ENV VER_HTSLIB="1.10.2"
+ENV VER_SAMTOOLS="1.10"
 
 RUN apt-get -yq update
 RUN apt-get install -yq --no-install-recommends \
@@ -49,7 +49,7 @@ RUN bash build/opt-build.sh $OPT
 COPY . .
 RUN bash build/opt-build-local.sh $OPT
 
-FROM ubuntu:16.04
+FROM ubuntu:20.04
 
 LABEL maintainer="cgphelp@sanger.ac.uk" \
       uk.ac.sanger.cgp="Cancer, Ageing and Somatic Mutation, Wellcome Trust Sanger Institute" \

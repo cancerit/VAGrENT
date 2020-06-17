@@ -25,9 +25,9 @@
 # ensure updated in Dockerfile too
 export VER_BEDTOOLS="2.28.0"
 export VER_VCFTOOLS="0.1.16"
-export VER_BIODBHTS="2.10"
-export VER_HTSLIB="1.9"
-export VER_SAMTOOLS="1.9"
+export VER_BIODBHTS="3.01"
+export VER_HTSLIB="1.10.2"
+export VER_SAMTOOLS="1.10"
 
 if [[ ($# -ne 1) ]] ; then
   echo "Please provide an installation path dependencies expected in PATH/PERL5LIB, e.g."
