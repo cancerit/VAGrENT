@@ -1,11 +1,16 @@
+.dockerignore
 .travis.yml
+bin/addVagrentContext.pl
 bin/Admin_CacheFileBuilder.pl
 bin/Admin_EnsemblReferenceFileGenerator.pl
 bin/Admin_EnsemblTranscriptFilter.pl
 bin/Admin_GeneRegionBedDumper.pl
 bin/AnnotateVcf.pl
 bin/cpanm
+build/opt-build-local.sh
+build/opt-build.sh
 CHANGES.md
+Dockerfile
 docs.tar.gz
 lib/Sanger/CGP/Vagrent.pm
 lib/Sanger/CGP/Vagrent/Annotators/AbstractAnnotator.pm
