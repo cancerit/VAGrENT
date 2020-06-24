@@ -1,5 +1,9 @@
 # CHANGES
 
+## 3.7.0
+
+* Update base image to Ubuntu 20.04
+
 ## 3.6.1
 
 * Missing command line arg description in `addVagrentContext.pl`
