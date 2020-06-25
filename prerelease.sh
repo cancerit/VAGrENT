@@ -27,6 +27,21 @@ set -eu # exit on first error or undefined value in subtitution
 # get current directory
 INIT_DIR=`pwd`
 
+if [ "$#" -ne "1" ] ; then
+  echo "Please provide the installation path"
+  exit 1
+fi
+
+# Installation path from setup.sh
+INST_PATH=$1
+
+# make sure tools installed can see the install loc of libraries
+set +u
+export PATH=`echo $INST_PATH/bin:$PATH | perl -pe 's/:\$//;'`
+export PERL5LIB=`echo $INST_PATH/lib/perl5:$PERL5LIB | perl -pe 's/:\$//;'`
+set -u
+
+
 rm -rf blib
 
 # get location of this file
