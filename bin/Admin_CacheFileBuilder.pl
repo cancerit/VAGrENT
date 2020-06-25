@@ -826,7 +826,7 @@ __END__
 
 =head1 NAME
 
-Admin_CacheFileBuilder.pl - Generates the Vagrent reference data set from the supplied GFF£/GTF and Fasta files
+Admin_CacheFileBuilder.pl - Generates the Vagrent reference data set from the supplied GFF/GTF and Fasta files
 
 =head1 SYNOPSIS
 

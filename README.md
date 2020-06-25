@@ -40,11 +40,13 @@ Please be aware that this expects basic C compilation libraries and tools to be 
 #### Cutting the release
 1. Update `lib/Sanger/CGP/Vagrent.pm` to the correct version.
 2. Update `CHANGES.md` to show major items.
-3. Run `./prerelease.sh`
-4. Check all tests and coverage reports are acceptable.
-5. Commit the updated docs tree and updated module/version.
-6. Push commits.
-7. Use the GitHub tools to draft a release.
+3. Run `./setup.sh /path/to/local/inst` to create a local installation
+4. Ensure your build enviroment contains Devel::Cover, Template and Pod::Coverage::CountParents. These can be loaded at the Sanger with `module load perl-testlibs`
+5. Run `./prerelease.sh /path/to/local/inst`
+6. Check all tests and coverage reports are acceptable.
+7. Commit the updated docs tree and updated module/version.
+8. Push commits.
+9. Use the GitHub tools to draft a release.
 
 LICENCE
 =======
