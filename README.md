@@ -41,7 +41,7 @@ Please be aware that this expects basic C compilation libraries and tools to be 
 1. Update `lib/Sanger/CGP/Vagrent.pm` to the correct version.
 2. Update `CHANGES.md` to show major items.
 3. Run `./setup.sh /path/to/local/inst` to create a local installation
-4. Load perl-testlibs module
+4. Ensure your build enviroment contains Devel::Cover, Template and Pod::Coverage::CountParents. These can be loaded at the Sanger with `module load perl-testlibs`
 5. Run `./prerelease.sh /path/to/local/inst`
 6. Check all tests and coverage reports are acceptable.
 7. Commit the updated docs tree and updated module/version.
